@@ -1,31 +1,41 @@
-require('dotenv').config();
-const express = require('express');
-const cors = require('cors');
-const { createClient } = require('@supabase/supabase-js');
-
-// Import routes
-const wordsRouter = require('./routes/words');
-const progressRouter = require('./routes/progress');
-const exercisesRouter = require('./routes/exercises');
-const achievementsRouter = require('./routes/achievements');
-
-// Initialize Supabase client
-const supabase = createClient(
-    process.env.SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_KEY
-);
 
 // Make supabase available to routes
 const app = express();
 app.locals.supabase = supabase;
 
-// Middleware
-app.use(cors());
+// Security Middleware
+app.use(helmet());
+app.use(compression());
+
+// CORS Configuration
+const corsOptions = {
+    origin: process.env.NODE_ENV === 'production'
+        ? process.env.FRONTEND_URL || 'https://lingolearn.vercel.app'
+        : 'http://localhost:3000',
+    credentials: true,
+    optionsSuccessStatus: 200
+};
+app.use(cors(corsOptions));
+
+// Rate Limiting
+const limiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100, // limit each IP to 100 requests per windowMs
+    message: 'Too many requests from this IP, please try again later.'
+});
+app.use('/api/', limiter);
+
+// Body Parser
 app.use(express.json());
 
 // Health check endpoint
 app.get('/health', (req, res) => {
-    res.json({ status: 'ok', message: 'LingoLearn API is running' });
+    res.json({
+        status: 'ok',
+        message: 'LingoLearn API is running',
+        environment: process.env.NODE_ENV || 'development',
+        timestamp: new Date().toISOString()
+    });
 });
 
 // API Routes

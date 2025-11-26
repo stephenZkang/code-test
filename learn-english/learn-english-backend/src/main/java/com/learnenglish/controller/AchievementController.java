@@ -13,24 +13,30 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/achievements")
 public class AchievementController {
-    
+
     @Autowired
     private AchievementService achievementService;
-    
+
+    /**
+     * 获取文本
+     * 
+     * @param userId
+     * @return
+     */
     @GetMapping
     public ApiResponse<List<Map<String, Object>>> getAllAchievements(
             @RequestParam(required = false, defaultValue = "1") Long userId) {
         List<Map<String, Object>> achievements = achievementService.getAllAchievements(userId);
         return ApiResponse.success(achievements);
     }
-    
+
     @GetMapping("/user")
     public ApiResponse<List<UserAchievement>> getUserAchievements(
             @RequestParam(required = false, defaultValue = "1") Long userId) {
         List<UserAchievement> userAchievements = achievementService.getUserAchievements(userId);
         return ApiResponse.success(userAchievements);
     }
-    
+
     @PostMapping("/check")
     public ApiResponse<List<Achievement>> checkAchievements(
             @RequestParam(required = false, defaultValue = "1") Long userId) {

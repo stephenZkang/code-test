@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.learnenglish.mapper.ExerciseMapper">
+
+    <resultMap id="ExerciseResultMap" type="com.learnenglish.model.Exercise">
+        <id property="id" column="id"/>
+        <result property="userId" column="user_id"/>
+        <result property="questionType" column="question_type"/>
+        <result property="wordId" column="word_id"/>
+        <result property="userAnswer" column="user_answer"/>
+        <result property="correctAnswer" column="correct_answer"/>
+        <result property="isCorrect" column="is_correct"/>
+        <result property="timeSpent" column="time_spent"/>
+        <result property="createdAt" column="created_at"/>
+    </resultMap>
+
+    <select id="findByUserId" resultMap="ExerciseResultMap">
+        SELECT * FROM exercises
+        WHERE user_id = #{userId}
+        ORDER BY created_at DESC
+        <if test="limit != null">
+            LIMIT #{limit}
+        </if>
+    </select>
+
+    <select id="findByUserAndDateRange" resultMap="ExerciseResultMap">
+        SELECT * FROM exercises
+        WHERE user_id = #{userId}
+        AND created_at BETWEEN #{startDate} AND #{endDate}
+        ORDER BY created_at DESC
+    </select>
+
+    <insert id="insert" parameterType="com.learnenglish.model.Exercise" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO exercises (user_id, question_type, word_id, user_answer, correct_answer, is_correct, time_spent)
+        VALUES (#{userId}, #{questionType}, #{wordId}, #{userAnswer}, #{correctAnswer}, #{isCorrect}, #{timeSpent})
+    </insert>
+
+    <select id="countByUserId" resultType="int">
+        SELECT COUNT(*) FROM exercises WHERE user_id = #{userId}
+    </select>
+
+    <select id="getAverageAccuracy" resultType="double">
+        SELECT COALESCE(AVG(CASE WHEN is_correct = 1 THEN 100.0 ELSE 0.0 END), 0.0)
+        FROM exercises
+        WHERE user_id = #{userId}
+    </select>
+
+</mapper>

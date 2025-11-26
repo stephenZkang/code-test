@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.learnenglish.mapper.WordMapper">
+
+    <resultMap id="WordResultMap" type="com.learnenglish.model.Word">
+        <id property="id" column="id"/>
+        <result property="english" column="english"/>
+        <result property="chinese" column="chinese"/>
+        <result property="pronunciation" column="pronunciation"/>
+        <result property="category" column="category"/>
+        <result property="difficulty" column="difficulty"/>
+        <result property="audioUrl" column="audio_url"/>
+        <result property="exampleSentence" column="example_sentence"/>
+        <result property="createdAt" column="created_at"/>
+    </resultMap>
+
+    <select id="findAll" resultMap="WordResultMap">
+        SELECT * FROM words ORDER BY id
+    </select>
+
+    <select id="findByCategory" resultMap="WordResultMap">
+        SELECT * FROM words WHERE category = #{category} ORDER BY id
+    </select>
+
+    <select id="findRandom" resultMap="WordResultMap">
+        SELECT w.* FROM words w
+        LEFT JOIN progress p ON w.id = p.word_id AND p.user_id = #{userId}
+        WHERE p.id IS NULL OR p.next_review_date &lt;= NOW()
+        ORDER BY RAND()
+        LIMIT #{limit}
+    </select>
+
+    <select id="findById" resultMap="WordResultMap">
+        SELECT * FROM words WHERE id = #{id}
+    </select>
+
+    <insert id="insert" parameterType="com.learnenglish.model.Word" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO words (english, chinese, pronunciation, category, difficulty, audio_url, example_sentence)
+        VALUES (#{english}, #{chinese}, #{pronunciation}, #{category}, #{difficulty}, #{audioUrl}, #{exampleSentence})
+    </insert>
+
+    <update id="update" parameterType="com.learnenglish.model.Word">
+        UPDATE words
+        SET english = #{english},
+            chinese = #{chinese},
+            pronunciation = #{pronunciation},
+            category = #{category},
+            difficulty = #{difficulty},
+            audio_url = #{audioUrl},
+            example_sentence = #{exampleSentence}
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM words WHERE id = #{id}
+    </delete>
+
+    <select id="count" resultType="int">
+        SELECT COUNT(*) FROM words
+    </select>
+
+</mapper>

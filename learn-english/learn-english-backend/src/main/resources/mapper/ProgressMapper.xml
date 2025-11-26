@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.learnenglish.mapper.ProgressMapper">
+
+    <resultMap id="ProgressResultMap" type="com.learnenglish.model.Progress">
+        <id property="id" column="id"/>
+        <result property="wordId" column="word_id"/>
+        <result property="userId" column="user_id"/>
+        <result property="masteryLevel" column="mastery_level"/>
+        <result property="lastReviewDate" column="last_review_date"/>
+        <result property="nextReviewDate" column="next_review_date"/>
+        <result property="reviewCount" column="review_count"/>
+        <result property="isBookmarked" column="is_bookmarked"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+    </resultMap>
+
+    <resultMap id="ProgressWithWordResultMap" type="com.learnenglish.model.Progress" extends="ProgressResultMap">
+        <association property="word" javaType="com.learnenglish.model.Word">
+            <id property="id" column="word_id"/>
+            <result property="english" column="english"/>
+            <result property="chinese" column="chinese"/>
+            <result property="pronunciation" column="pronunciation"/>
+            <result property="category" column="category"/>
+            <result property="difficulty" column="difficulty"/>
+            <result property="audioUrl" column="audio_url"/>
+            <result property="exampleSentence" column="example_sentence"/>
+        </association>
+    </resultMap>
+
+    <select id="findByUserAndWord" resultMap="ProgressResultMap">
+        SELECT * FROM progress
+        WHERE user_id = #{userId} AND word_id = #{wordId}
+    </select>
+
+    <select id="findByUserId" resultMap="ProgressWithWordResultMap">
+        SELECT p.*, w.english, w.chinese, w.pronunciation, w.category, w.difficulty, w.audio_url, w.example_sentence
+        FROM progress p
+        LEFT JOIN words w ON p.word_id = w.id
+        WHERE p.user_id = #{userId}
+        ORDER BY p.updated_at DESC
+    </select>
+
+    <select id="findDueWords" resultMap="ProgressWithWordResultMap">
+        SELECT p.*, w.english, w.chinese, w.pronunciation, w.category, w.difficulty, w.audio_url, w.example_sentence
+        FROM progress p
+        LEFT JOIN words w ON p.word_id = w.id
+        WHERE p.user_id = #{userId} 
+        AND (p.next_review_date IS NULL OR p.next_review_date &lt;= #{now})
+        ORDER BY p.next_review_date ASC
+    </select>
+
+    <select id="findBookmarked" resultMap="ProgressWithWordResultMap">
+        SELECT p.*, w.english, w.chinese, w.pronunciation, w.category, w.difficulty, w.audio_url, w.example_sentence
+        FROM progress p
+        LEFT JOIN words w ON p.word_id = w.id
+        WHERE p.user_id = #{userId} AND p.is_bookmarked = 1
+        ORDER BY p.updated_at DESC
+    </select>
+
+    <insert id="insert" parameterType="com.learnenglish.model.Progress" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO progress (word_id, user_id, mastery_level, last_review_date, next_review_date, review_count, is_bookmarked)
+        VALUES (#{wordId}, #{userId}, #{masteryLevel}, #{lastReviewDate}, #{nextReviewDate}, #{reviewCount}, #{isBookmarked})
+    </insert>
+
+    <update id="update" parameterType="com.learnenglish.model.Progress">
+        UPDATE progress
+        SET mastery_level = #{masteryLevel},
+            last_review_date = #{lastReviewDate},
+            next_review_date = #{nextReviewDate},
+            review_count = #{reviewCount},
+            is_bookmarked = #{isBookmarked}
+        WHERE id = #{id}
+    </update>
+
+    <select id="countLearned" resultType="int">
+        SELECT COUNT(*) FROM progress WHERE user_id = #{userId}
+    </select>
+
+    <select id="countMastered" resultType="int">
+        SELECT COUNT(*) FROM progress WHERE user_id = #{userId} AND mastery_level >= 4
+    </select>
+
+    <select id="countBookmarked" resultType="int">
+        SELECT COUNT(*) FROM progress WHERE user_id = #{userId} AND is_bookmarked = 1
+    </select>
+
+</mapper>

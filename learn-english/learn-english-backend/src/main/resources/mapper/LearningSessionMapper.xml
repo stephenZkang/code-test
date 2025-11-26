@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.learnenglish.mapper.LearningSessionMapper">
+
+    <resultMap id="LearningSessionResultMap" type="com.learnenglish.model.LearningSession">
+        <id property="id" column="id"/>
+        <result property="userId" column="user_id"/>
+        <result property="sessionDate" column="session_date"/>
+        <result property="wordsLearned" column="words_learned"/>
+        <result property="exercisesCompleted" column="exercises_completed"/>
+        <result property="timeSpent" column="time_spent"/>
+        <result property="createdAt" column="created_at"/>
+    </resultMap>
+
+    <select id="findByUserAndDate" resultMap="LearningSessionResultMap">
+        SELECT * FROM learning_sessions
+        WHERE user_id = #{userId} AND session_date = #{sessionDate}
+    </select>
+
+    <select id="findByUserAndDateRange" resultMap="LearningSessionResultMap">
+        SELECT * FROM learning_sessions
+        WHERE user_id = #{userId}
+        AND session_date BETWEEN #{startDate} AND #{endDate}
+        ORDER BY session_date DESC
+    </select>
+
+    <insert id="insert" parameterType="com.learnenglish.model.LearningSession" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO learning_sessions (user_id, session_date, words_learned, exercises_completed, time_spent)
+        VALUES (#{userId}, #{sessionDate}, #{wordsLearned}, #{exercisesCompleted}, #{timeSpent})
+    </insert>
+
+    <update id="update" parameterType="com.learnenglish.model.LearningSession">
+        UPDATE learning_sessions
+        SET words_learned = #{wordsLearned},
+            exercises_completed = #{exercisesCompleted},
+            time_spent = #{timeSpent}
+        WHERE id = #{id}
+    </update>
+
+    <select id="countStreak" resultType="int">
+        SELECT COUNT(*) FROM (
+            SELECT session_date,
+                   DATEDIFF(#{endDate}, session_date) - ROW_NUMBER() OVER (ORDER BY session_date DESC) as grp
+            FROM learning_sessions
+            WHERE user_id = #{userId}
+            AND session_date &lt;= #{endDate}
+            ORDER BY session_date DESC
+        ) t
+        WHERE grp = 0
+    </select>
+
+</mapper>

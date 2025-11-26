@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" 
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.learnenglish.mapper.AchievementMapper">
+
+    <resultMap id="AchievementResultMap" type="com.learnenglish.model.Achievement">
+        <id property="id" column="id"/>
+        <result property="name" column="name"/>
+        <result property="description" column="description"/>
+        <result property="icon" column="icon"/>
+        <result property="requirementType" column="requirement_type"/>
+        <result property="requirementValue" column="requirement_value"/>
+        <result property="createdAt" column="created_at"/>
+    </resultMap>
+
+    <resultMap id="UserAchievementResultMap" type="com.learnenglish.model.UserAchievement">
+        <id property="id" column="id"/>
+        <result property="userId" column="user_id"/>
+        <result property="achievementId" column="achievement_id"/>
+        <result property="unlockedAt" column="unlocked_at"/>
+    </resultMap>
+
+    <resultMap id="UserAchievementWithDetailsResultMap" type="com.learnenglish.model.UserAchievement" extends="UserAchievementResultMap">
+        <association property="achievement" javaType="com.learnenglish.model.Achievement">
+            <id property="id" column="achievement_id"/>
+            <result property="name" column="name"/>
+            <result property="description" column="description"/>
+            <result property="icon" column="icon"/>
+            <result property="requirementType" column="requirement_type"/>
+            <result property="requirementValue" column="requirement_value"/>
+        </association>
+    </resultMap>
+
+    <select id="findAll" resultMap="AchievementResultMap">
+        SELECT * FROM achievements ORDER BY id
+    </select>
+
+    <select id="findById" resultMap="AchievementResultMap">
+        SELECT * FROM achievements WHERE id = #{id}
+    </select>
+
+    <select id="findUserAchievements" resultMap="UserAchievementWithDetailsResultMap">
+        SELECT ua.*, a.name, a.description, a.icon, a.requirement_type, a.requirement_value
+        FROM user_achievements ua
+        LEFT JOIN achievements a ON ua.achievement_id = a.id
+        WHERE ua.user_id = #{userId}
+        ORDER BY ua.unlocked_at DESC
+    </select>
+
+    <select id="findUserAchievement" resultMap="UserAchievementResultMap">
+        SELECT * FROM user_achievements
+        WHERE user_id = #{userId} AND achievement_id = #{achievementId}
+    </select>
+
+    <insert id="insertUserAchievement" parameterType="com.learnenglish.model.UserAchievement" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO user_achievements (user_id, achievement_id)
+        VALUES (#{userId}, #{achievementId})
+    </insert>
+
+</mapper>

@@ -145,9 +145,9 @@ TRUNCATE TABLE user_achievements;
 ### 后端无法启动
 ```bash
 # 检查 Java 版本
-java -version  # 应该是 17 或更高
+java -version  # 应该是 8 或更高
 
-# 检查 Maven
+# 检查 Maven 3.6.1或更高
 mvn -version
 
 # 检查 MySQL

@@ -1,0 +1,33 @@
+# Python Service Environment Configuration
+
+# AI Provider (google or openai)
+AI_PROVIDER=google
+
+# Google Gemini Configuration
+GOOGLE_API_KEY=AIzaSyAFhbTrSgM7z9gdlGE482DchBVpXHum97k
+GEMINI_MODEL=gemini-pro
+GEMINI_EMBEDDING_MODEL=models/embedding-001
+
+# OpenAI Configuration (Optional if using Gemini)
+OPENAI_API_KEY=your_openai_api_key_here
+OPENAI_MODEL=gpt-3.5-turbo
+OPENAI_EMBEDDING_MODEL=text-embedding-ada-002
+
+# Milvus Configuration
+MILVUS_HOST=127.0.0.1
+MILVUS_PORT=19530
+MILVUS_COLLECTION_NAME=lawrag_documents
+
+# SpringBoot Backend URL
+BACKEND_URL=http://localhost:8080/api
+
+# Service Configuration
+SERVICE_HOST=0.0.0.0
+SERVICE_PORT=8000
+
+# Chunking Configuration
+CHUNK_SIZE=500
+CHUNK_OVERLAP=50
+
+# Legal Text Patterns (for article/clause detection)
+LEGAL_PATTERN_ENABLED=true

@@ -3,6 +3,7 @@ from langchain_openai import OpenAIEmbeddings
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from typing import List, Dict
 import logging
+import time
 
 from config import (
     MILVUS_HOST, MILVUS_PORT, MILVUS_COLLECTION_NAME, 
@@ -97,27 +98,65 @@ class VectorStore:
         
         try:
             # Extract texts for embedding
-            texts = [chunk['text'] for chunk in chunks]
+            all_texts = [chunk['text'] for chunk in chunks]
             
-            # Generate embeddings
-            embeddings = self.embeddings.embed_documents(texts)
+            # Extreme throttling for Gemini Free Tier
+            batch_size = 1  # Process 1 chunk at a time
+            delay_between_batches = 10.0  # Wait 10 seconds between chunks
             
+            all_embeddings = []
+            
+            # Process in batches (one by one)
+            for i in range(0, len(all_texts), batch_size):
+                batch_texts = all_texts[i:i + batch_size]
+                
+                # Conservative retry logic
+                max_retries = 5
+                base_delay = 60  # Wait at least 60s on 429
+                
+                batch_success = False
+                for attempt in range(max_retries):
+                    try:
+                        batch_embeddings = self.embeddings.embed_documents(batch_texts)
+                        all_embeddings.extend(batch_embeddings)
+                        batch_success = True
+                        break
+                    except Exception as e:
+                        if "429" in str(e) or "quota" in str(e).lower():
+                            if attempt < max_retries - 1:
+                                delay = base_delay * (attempt + 1) # Linear backoff for long waits
+                                logger.warning(f"Rate limit hit at chunk {i+1}/{len(all_texts)}, retrying in {delay}s... (Attempt {attempt+1}/{max_retries}). Error: {str(e)[:200]}")
+                                time.sleep(delay)
+                            else:
+                                logger.error(f"Max retries exceeded for chunk {i+1}: {e}")
+                                raise
+                        else:
+                            raise e
+                
+                if not batch_success:
+                    raise Exception(f"Failed to embed chunk {i+1} after retries")
+                
+                # Proactive throttling between chunks
+                if i + batch_size < len(all_texts):
+                    logger.info(f"Throttling: waiting {delay_between_batches}s before next chunk...")
+                    time.sleep(delay_between_batches)
+
             # Prepare data for insertion
             data = [
                 [chunk['document_id'] for chunk in chunks],
                 [chunk['chunk_index'] for chunk in chunks],
                 [chunk['chunk_position'] for chunk in chunks],
                 [chunk['text'][:5000] for chunk in chunks],  # Truncate if necessary
-                embeddings
+                all_embeddings
             ]
             
             # Insert into Milvus
-            insert_result = self.collection.insert(data)
+            self.collection.insert(data)
             self.collection.flush()
             
             logger.info(f"Inserted {len(chunks)} chunks into Milvus")
             return len(chunks)
-        
+                        
         except Exception as e:
             logger.error(f"Failed to add chunks to Milvus: {str(e)}")
             raise

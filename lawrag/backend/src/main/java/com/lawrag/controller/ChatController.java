@@ -47,7 +47,7 @@ public class ChatController {
             @RequestParam(required = false) String sessionId,
             @RequestParam String question) {
 
-        SseEmitter emitter = new SseEmitter(60000L); // 60 second timeout
+        SseEmitter emitter = new SseEmitter(300000L); // 5 minute timeout to handle rate limits
 
         executorService.execute(() -> {
             try {

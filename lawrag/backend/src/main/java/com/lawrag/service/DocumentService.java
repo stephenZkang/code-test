@@ -93,7 +93,6 @@ public class DocumentService {
                 document.getFileType()).subscribe(
                         response -> {
                             log.info("Python service accepted parsing request for document {}", document.getId());
-                            updateParseStatus(document.getId(), "PARSING", 10, null, null);
                         },
                         error -> {
                             log.error("Failed to trigger parsing for document {}: {}", document.getId(),

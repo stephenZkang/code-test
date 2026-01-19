@@ -25,11 +25,11 @@ __pycache__/
 *.pyd
 venv/
 env/
-.env
+
 .pytest_cache/
 python-service/logs/
 python-service/venv/
-python-service/.env
+
 
 # Node.js / Frontend
 node_modules/
@@ -50,4 +50,4 @@ docker-data/
 
 # Testing
 test_doc.txt
-functional_test.py
+

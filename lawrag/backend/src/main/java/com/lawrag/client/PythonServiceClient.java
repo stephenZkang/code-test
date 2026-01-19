@@ -19,12 +19,14 @@ import java.util.Map;
 public class PythonServiceClient {
 
     private final WebClient webClient;
+    private final long timeoutMs;
 
     public PythonServiceClient(@Value("${app.python-service.url}") String pythonServiceUrl,
             @Value("${app.python-service.timeout}") long timeout) {
         this.webClient = WebClient.builder()
                 .baseUrl(pythonServiceUrl)
                 .build();
+        this.timeoutMs = timeout;
     }
 
     /**
@@ -41,7 +43,7 @@ public class PythonServiceClient {
                 .bodyValue(request)
                 .retrieve()
                 .bodyToMono(ParseResponse.class)
-                .timeout(Duration.ofSeconds(5))
+                .timeout(Duration.ofMillis(timeoutMs))
                 .doOnError(e -> log.error("Error calling Python service /parse: {}", e.getMessage()));
     }
 
@@ -58,7 +60,7 @@ public class PythonServiceClient {
                 .bodyValue(request)
                 .retrieve()
                 .bodyToMono(SearchResponse.class)
-                .timeout(Duration.ofSeconds(10))
+                .timeout(Duration.ofMillis(timeoutMs))
                 .doOnError(e -> log.error("Error calling Python service /search: {}", e.getMessage()));
     }
 
@@ -75,7 +77,7 @@ public class PythonServiceClient {
                 .bodyValue(request)
                 .retrieve()
                 .bodyToMono(QAResponse.class)
-                .timeout(Duration.ofSeconds(30))
+                .timeout(Duration.ofMillis(timeoutMs))
                 .doOnError(e -> log.error("Error calling Python service /qa: {}", e.getMessage()));
     }
 

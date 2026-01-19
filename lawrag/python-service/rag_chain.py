@@ -4,6 +4,7 @@ from langchain.prompts import ChatPromptTemplate
 from langchain.schema import HumanMessage, SystemMessage
 from typing import List, Dict
 import logging
+import time
 
 from vector_store import VectorStore
 from config import (
@@ -61,7 +62,7 @@ class RAGChain:
                 return {
                     'answer': '抱歉，我在知识库中没有找到与您问题相关的法律文档。请尝试换一个问法或上传相关的法律文档。',
                     'references': [],
-                    'model': OPENAI_MODEL,
+                    'model': self.model_name,
                     'tokens_used': 0
                 }
             
@@ -69,21 +70,36 @@ class RAGChain:
             context = self._build_context(search_results)
             
             # 3. Generate answer
-            prompt = f"""基于以下法律文档内容，回答用户的问题。
-
-法律文档内容:
-{context}
-
-用户问题: {question}
-
-请提供详细且准确的回答，并引用具体的法律条款。"""
+            # Gemini sometimes has issues with SystemMessage, so we combine it into the HumanMessage
+            full_prompt = f"{self.system_prompt}\n\n基于以下法律文档内容，回答用户的问题。\n\n法律文档内容:\n{context}\n\n用户问题: {question}\n\n请提供详细且准确的回答，并引用具体的法律条款。"
             
             messages = [
-                SystemMessage(content=self.system_prompt),
-                HumanMessage(content=prompt)
+                HumanMessage(content=full_prompt)
             ]
             
-            response = self.llm.invoke(messages)
+            # Retry logic for LLM call (Gemini Free Tier rate limits)
+            max_retries = 3
+            base_delay = 30
+            
+            response = None
+            for attempt in range(max_retries):
+                try:
+                    response = self.llm.invoke(messages)
+                    break
+                except Exception as e:
+                    if "429" in str(e) or "quota" in str(e).lower():
+                        if attempt < max_retries - 1:
+                            delay = base_delay * (attempt + 1)
+                            logger.warning(f"LLM rate limit hit, retrying in {delay}s... (Attempt {attempt+1}/{max_retries})")
+                            time.sleep(delay)
+                        else:
+                            raise e
+                    else:
+                        raise e
+            
+            if not response:
+                raise Exception("Failed to get response from LLM after retries")
+
             answer = response.content
             
             # 4. Format references

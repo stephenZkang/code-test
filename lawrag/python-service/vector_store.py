@@ -20,6 +20,8 @@ class VectorStore:
     
     def __init__(self):
         self.collection_name = MILVUS_COLLECTION_NAME
+        self.connected = False
+        
         if AI_PROVIDER == "google":
             self.embeddings = GoogleGenerativeAIEmbeddings(
                 model=GEMINI_EMBEDDING_MODEL,
@@ -30,8 +32,12 @@ class VectorStore:
             self.embeddings = OpenAIEmbeddings(openai_api_key=OPENAI_API_KEY)
             self.dim = 1536 # OpenAI dimension
             
-        self._connect()
-        self._create_collection()
+        try:
+            self._connect()
+            self._create_collection()
+            self.connected = True
+        except Exception as e:
+            logger.error(f"Failed to initialize Milvus connection: {e}. Service will run in degraded mode.")
     
     def _connect(self):
         """Connect to Milvus"""
@@ -82,6 +88,10 @@ class VectorStore:
         Add document chunks to vector store
         Returns the number of vectors added
         """
+        if not self.connected:
+            logger.warning("Milvus not connected, skipping add_chunks")
+            return 0
+            
         if not chunks:
             return 0
         
@@ -116,6 +126,10 @@ class VectorStore:
         """
         Semantic search in vector store
         """
+        if not self.connected:
+            logger.warning("Milvus not connected, returning empty search results")
+            return []
+
         try:
             # Generate query embedding
             query_embedding = self.embeddings.embed_query(query)

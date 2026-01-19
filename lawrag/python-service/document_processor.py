@@ -35,6 +35,8 @@ class DocumentProcessor:
                 return self._parse_docx(file_path)
             elif file_type.upper() in ['PNG', 'JPG', 'JPEG', 'TIFF']:
                 return self._parse_image(file_path)
+            elif file_type.upper() == 'TXT':
+                return self._parse_txt(file_path)
             else:
                 raise ValueError(f"Unsupported file type: {file_type}")
         except Exception as e:
@@ -61,6 +63,11 @@ class DocumentProcessor:
         image = Image.open(file_path)
         text = pytesseract.image_to_string(image, lang='chi_sim')
         return text
+
+    def _parse_txt(self, file_path: str) -> str:
+        """Extract text from TXT file"""
+        with open(file_path, 'r', encoding='utf-8') as f:
+            return f.read()
     
     def chunk_text(self, text: str, document_id: int) -> List[Dict]:
         """

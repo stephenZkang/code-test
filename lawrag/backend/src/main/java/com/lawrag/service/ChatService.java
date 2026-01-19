@@ -27,47 +27,47 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class ChatService {
-    
+
     private final ChatSessionMapper chatSessionMapper;
     private final ChatMessageMapper chatMessageMapper;
     private final DocumentReferenceMapper documentReferenceMapper;
     private final PythonServiceClient pythonServiceClient;
     private final RedisTemplate<String, Object> redisTemplate;
-    
+
     @Value("${app.cache.qa-enabled}")
     private boolean cacheEnabled;
-    
+
     @Value("${app.cache.qa-ttl}")
     private long cacheTtl;
-    
+
     /**
      * Process Q&A request
      */
     @Transactional
     public ChatResponse askQuestion(String sessionId, String question) {
         long startTime = System.currentTimeMillis();
-        
+
         // Create or get session
         if (sessionId == null || sessionId.isEmpty()) {
             sessionId = createNewSession();
         } else {
             ensureSessionExists(sessionId);
         }
-        
+
         // Save user message
         ChatMessage userMessage = new ChatMessage();
         userMessage.setSessionId(sessionId);
         userMessage.setRole("user");
         userMessage.setContent(question);
         chatMessageMapper.insert(userMessage);
-        
+
         // Check cache
         String cacheKey = "qa:" + question.hashCode();
         if (cacheEnabled) {
             ChatResponse cachedResponse = (ChatResponse) redisTemplate.opsForValue().get(cacheKey);
             if (cachedResponse != null) {
                 log.info("Cache hit for question: {}", question);
-                
+
                 // Save assistant message
                 ChatMessage assistantMessage = createAssistantMessage(
                         sessionId,
@@ -75,63 +75,74 @@ public class ChatService {
                         "gpt-3.5-turbo",
                         0,
                         (int) (System.currentTimeMillis() - startTime),
-                        true
-                );
-                
+                        true);
+
                 cachedResponse.setMessageId(assistantMessage.getId());
                 cachedResponse.setCached(true);
-                
+
                 updateSessionTimestamp(sessionId);
                 return cachedResponse;
             }
         }
-        
+
         // Call Python AI service
-        ChatResponse response = pythonServiceClient.askQuestion(question, sessionId)
+        PythonServiceClient.QAResponse qaResponse = pythonServiceClient.askQuestion(question, sessionId)
                 .blockOptional()
                 .orElseThrow(() -> new RuntimeException("Failed to get response from AI service"));
-        
+
         int responseTime = (int) (System.currentTimeMillis() - startTime);
-        
+
         // Save assistant message
         ChatMessage assistantMessage = createAssistantMessage(
                 sessionId,
-                response.getAnswer(),
-                "gpt-3.5-turbo",
-                0,
+                qaResponse.getAnswer(),
+                qaResponse.getModel() != null ? qaResponse.getModel() : "gpt-3.5-turbo",
+                qaResponse.getTokensUsed() != null ? qaResponse.getTokensUsed() : 0,
                 responseTime,
-                false
-        );
-        
+                false);
+
+        ChatResponse response = new ChatResponse();
+        response.setAnswer(qaResponse.getAnswer());
         response.setMessageId(assistantMessage.getId());
         response.setCached(false);
         response.setResponseTime(responseTime);
-        
-        // Save references
-        if (response.getReferences() != null && !response.getReferences().isEmpty()) {
+
+        // Save references and map to response
+        if (qaResponse.getReferences() != null && !qaResponse.getReferences().isEmpty()) {
             assistantMessage.setHasReferences(true);
             chatMessageMapper.updateById(assistantMessage);
-            
-            for (ChatResponse.ReferenceInfo ref : response.getReferences()) {
+
+            List<ChatResponse.ReferenceInfo> referenceInfos = new ArrayList<>();
+
+            for (PythonServiceClient.Reference ref : qaResponse.getReferences()) {
                 DocumentReference docRef = new DocumentReference();
                 docRef.setMessageId(assistantMessage.getId());
                 docRef.setDocumentId(ref.getDocumentId());
                 docRef.setChunkPosition(ref.getChunkPosition());
                 docRef.setSimilarityScore(ref.getSimilarityScore());
                 documentReferenceMapper.insert(docRef);
+
+                ChatResponse.ReferenceInfo refInfo = new ChatResponse.ReferenceInfo();
+                refInfo.setDocumentId(ref.getDocumentId());
+                refInfo.setChunkPosition(ref.getChunkPosition());
+                refInfo.setSimilarityScore(ref.getSimilarityScore());
+                // Document title would require an extra DB lookup, skipping for now or could be
+                // fetched
+                referenceInfos.add(refInfo);
             }
+            response.setReferences(referenceInfos);
         }
-        
+
         // Cache the response
         if (cacheEnabled) {
             redisTemplate.opsForValue().set(cacheKey, response, cacheTtl, TimeUnit.SECONDS);
         }
-        
+
         updateSessionTimestamp(sessionId);
-        
+
         return response;
     }
-    
+
     /**
      * Create new chat session
      */
@@ -143,7 +154,7 @@ public class ChatService {
         chatSessionMapper.insert(session);
         return sessionId;
     }
-    
+
     /**
      * Ensure session exists
      */
@@ -151,7 +162,7 @@ public class ChatService {
         LambdaQueryWrapper<ChatSession> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(ChatSession::getSessionId, sessionId);
         ChatSession session = chatSessionMapper.selectOne(wrapper);
-        
+
         if (session == null) {
             session = new ChatSession();
             session.setSessionId(sessionId);
@@ -159,12 +170,12 @@ public class ChatService {
             chatSessionMapper.insert(session);
         }
     }
-    
+
     /**
      * Create assistant message
      */
-    private ChatMessage createAssistantMessage(String sessionId, String content, String model, 
-                                               int tokensUsed, int responseTime, boolean cached) {
+    private ChatMessage createAssistantMessage(String sessionId, String content, String model,
+            int tokensUsed, int responseTime, boolean cached) {
         ChatMessage message = new ChatMessage();
         message.setSessionId(sessionId);
         message.setRole("assistant");
@@ -177,7 +188,7 @@ public class ChatService {
         chatMessageMapper.insert(message);
         return message;
     }
-    
+
     /**
      * Update session timestamp
      */
@@ -190,7 +201,7 @@ public class ChatService {
             chatSessionMapper.updateById(session);
         }
     }
-    
+
     /**
      * Get chat history
      */
@@ -203,7 +214,7 @@ public class ChatService {
         // Reverse to oldest first
         return messages;
     }
-    
+
     /**
      * Get references for a message
      */

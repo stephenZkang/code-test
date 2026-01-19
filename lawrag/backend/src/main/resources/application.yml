@@ -68,7 +68,7 @@ server:
 app:
   # File storage path
   upload:
-    path: ./uploads
+    path: D:/Antigravity/code-test/lawrag/backend/uploads
   
   # Python AI Service Configuration
   python-service:

@@ -137,6 +137,34 @@ npm run dev
 # 应用运行在 http://localhost:3000
 ```
 
+### 5. Docker 一键部署 (推荐)
+
+如果您安装了 Docker 和 Docker Compose，可以使用以下方式快速部署：
+
+#### 开发环境 (支持热重载)
+```bash
+# 1. 复制并配置环境变量
+cp .env.docker .env
+
+# 2. 启动服务
+docker-compose -f docker-compose.dev.yml up --build
+```
+- 前端: http://localhost:3000
+- 后端: http://localhost:8080
+- AI服务: http://localhost:8000
+
+#### 生产环境
+```bash
+# 1. 复制并配置环境变量
+cp .env.docker .env
+
+# 2. 启动服务
+docker-compose up --build
+```
+- 前端: http://localhost:8888
+- 后端: http://localhost:8081
+- AI服务: http://localhost:8001
+
 ## 环境变量配置
 
 ### 后端 (.env)

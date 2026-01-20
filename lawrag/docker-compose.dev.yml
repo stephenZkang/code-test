@@ -1,85 +1,64 @@
 version: '3.5'
 
 services:
-  # Infrastructure
+  # Infrastructure (same as prod but maybe with different ports or settings)
   mysql:
     image: mysql:8.0
-    container_name: lawrag-mysql
+    container_name: lawrag-mysql-dev
     environment:
       MYSQL_DATABASE: lawrag
       MYSQL_ROOT_PASSWORD: root
     ports:
-      - "3307:3306"
+      - "3306:3306"
     volumes:
       - ./database/schema.sql:/docker-entrypoint-initdb.d/schema.sql
-      - ./volumes/mysql:/var/lib/mysql
-    healthcheck:
-      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot" ]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      - ./volumes/mysql-dev:/var/lib/mysql
 
   redis:
     image: redis:7.0-alpine
-    container_name: lawrag-redis
+    container_name: lawrag-redis-dev
     command: redis-server --requirepass 123456
     ports:
-      - "6380:6379"
-    volumes:
-      - ./volumes/redis:/data
-    healthcheck:
-      test: [ "CMD", "redis-cli", "ping" ]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      - "6379:6379"
 
   etcd:
-    container_name: milvus-etcd
+    container_name: milvus-etcd-dev
     image: quay.io/coreos/etcd:v3.5.5
     environment:
       - ETCD_AUTO_COMPACTION_RETENTION_RENDER_BY_HOUR=1
       - ETCD_AUTO_COMPACTION_RETENTION=1
     command: etcd -advertise-client-urls http://127.0.0.1:2379 -listen-client-urls http://0.0.0.0:2379 -data-dir /etcd
-    volumes:
-      - ./volumes/etcd:/etcd
 
   minio:
-    container_name: milvus-minio
+    container_name: milvus-minio-dev
     image: minio/minio:RELEASE.2023-03-20T20-16-18Z
     environment:
       MINIO_ACCESS_KEY: minioadmin
       MINIO_SECRET_KEY: minioadmin
     ports:
-      - "9003:9001"
-      - "9002:9000"
+      - "9001:9001"
+      - "9000:9000"
     command: minio server /data --console-address ":9001"
-    volumes:
-      - ./volumes/minio:/data
-    healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:9000/minio/health/live" ]
-      interval: 30s
-      timeout: 20s
-      retries: 3
 
   standalone:
-    container_name: milvus-standalone
+    container_name: milvus-standalone-dev
     image: milvusdb/milvus:v2.3.4
     command: [ "milvus", "run", "standalone" ]
     environment:
       ETCD_ENDPOINTS: etcd:2379
       MINIO_ADDRESS: minio:9000
-    volumes:
-      - ./volumes/milvus:/var/lib/milvus
     ports:
-      - "19531:19530"
+      - "19530:19530"
     depends_on:
       - "etcd"
       - "minio"
 
-  # Application Services
+  # Application Services in Dev Mode
   python-service:
     build: ./python-service
-    container_name: lawrag-python-service
+    container_name: lawrag-python-service-dev
+    volumes:
+      - ./python-service:/app
     environment:
       - AI_PROVIDER=google
       - GOOGLE_API_KEY=${GOOGLE_API_KEY}
@@ -87,14 +66,15 @@ services:
       - MILVUS_HOST=standalone
       - MILVUS_PORT=19530
       - BACKEND_URL=http://backend:8080/api
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
     depends_on:
       - standalone
     ports:
-      - "8001:8000"
+      - "8000:8000"
 
   backend:
     build: ./backend
-    container_name: lawrag-backend
+    container_name: lawrag-backend-dev
     environment:
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/lawrag?useUnicode=true&characterEncoding=utf8&serverTimezone=GMT%2B8
       - SPRING_DATASOURCE_USERNAME=root
@@ -103,21 +83,23 @@ services:
       - SPRING_REDIS_PASSWORD=123456
       - APP_PYTHON_SERVICE_URL=http://python-service:8000
     depends_on:
-      mysql:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
+      - mysql
+      - redis
     ports:
-      - "8081:8080"
+      - "8080:8080"
 
   frontend:
-    build: ./frontend
-    container_name: lawrag-frontend
+    image: node:18-slim
+    container_name: lawrag-frontend-dev
+    working_dir: /app
+    volumes:
+      - ./frontend:/app
+    command: npm run dev -- --host 0.0.0.0 --port 3000
     ports:
-      - "8888:80"
+      - "3000:3000"
     depends_on:
       - backend
 
 networks:
   default:
-    name: lawrag-network
+    name: lawrag-network-dev

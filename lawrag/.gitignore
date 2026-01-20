@@ -48,6 +48,7 @@ frontend/dist/
 # Docker
 docker-data/
 volumes/
+uploads/
 
 # Testing
 

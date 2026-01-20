@@ -84,7 +84,7 @@ services:
       - AI_PROVIDER=google
       - GOOGLE_API_KEY=${GOOGLE_API_KEY}
       - GEMINI_MODEL=gemini-flash-latest
-      - MILVUS_HOST=standalone
+      - MILVUS_HOST=milvus-standalone
       - MILVUS_PORT=19530
       - BACKEND_URL=http://backend:8080/api
     depends_on:

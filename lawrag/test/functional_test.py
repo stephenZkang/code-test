@@ -3,7 +3,7 @@ import time
 import os
 import sys
 
-BASE_URL = "http://127.0.0.1:8080/api"
+BASE_URL = "http://127.0.0.1:8081/api"
 
 def print_step(step):
     print(f"\n{'='*20} {step} {'='*20}")
@@ -26,7 +26,7 @@ def test_health():
 def test_upload_and_flow():
     print_step("Testing Document Upload & Parsing Flow")
     
-    file_path = "../test_doc.txt"
+    file_path = "./test_doc.txt"
     if not os.path.exists(file_path):
         print(f"❌ Test file {file_path} not found")
         return

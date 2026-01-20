@@ -33,6 +33,8 @@ spring:
   servlet:
     multipart:
       enabled: true
+      # 配置文件上传临时目录（避免使用Tomcat默认的/tmp目录）
+      location: ./temp/uploads
       max-file-size: 100MB
       max-request-size: 100MB
       file-size-threshold: 2KB
@@ -67,7 +69,7 @@ server:
 app:
   # File storage path
   upload:
-    path: D:/Antigravity/code-test/lawrag/backend/uploads
+    path: /opt/app/uploads/
   
   # Python AI Service Configuration
   python-service:

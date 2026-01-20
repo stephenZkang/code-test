@@ -1,10 +1,9 @@
-FROM python:3.12-slim
+FROM python:3.10.19-slim
 
 WORKDIR /app
 
 # Install system dependencies for Milvus/other libs if needed
-RUN apt-get update  -o Acquire::Sources::List="deb https://mirrors.aliyun.com/debian/ bookworm main contrib non-free non-free-firmware; deb https://mirrors.aliyun.com/debian-security/ bookworm-security main contrib non-free non-free-firmware; deb https://mirrors.aliyun.com/debian/ bookworm-updates main contrib non-free non-free-firmware" \
-    && apt-get install -y \
+RUN apt-get update  && apt-get install -y \
     build-essential \
     curl \
     && rm -rf /var/lib/apt/lists/*

@@ -5,6 +5,7 @@ from langchain.schema import HumanMessage, SystemMessage
 from typing import List, Dict
 import logging
 import time
+import os
 
 from vector_store import VectorStore
 from config import (
@@ -78,8 +79,8 @@ class RAGChain:
             ]
             
             # Retry logic for LLM call (Gemini Free Tier rate limits)
-            max_retries = 3
-            base_delay = 30
+            max_retries = 5
+            base_delay = 60
             
             response = None
             for attempt in range(max_retries):

@@ -16,19 +16,18 @@ spring:
       max-lifetime: 1800000
   
   # Redis Configuration
-  data:
-    redis:
-      host: 127.0.0.1
-      port: 6379
-      password: 123456
-      database: 0
-      timeout: 5000
-      lettuce:
-        pool:
-          max-active: 8
-          max-idle: 8
-          min-idle: 0
-          max-wait: -1ms
+  redis:
+    host: 127.0.0.1
+    port: 6379
+    password: 123456
+    database: 0
+    timeout: 5000
+    lettuce:
+      pool:
+        max-active: 8
+        max-idle: 8
+        min-idle: 0
+        max-wait: -1ms
   
   # File Upload Configuration
   servlet:

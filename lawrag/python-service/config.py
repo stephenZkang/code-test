@@ -5,7 +5,7 @@ load_dotenv()
 
 # AI Model Configuration (Gemini/OpenAI)
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
-GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-pro")
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
 GEMINI_EMBEDDING_MODEL = os.getenv("GEMINI_EMBEDDING_MODEL", "models/text-embedding-004")
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")

@@ -47,7 +47,8 @@ frontend/dist/
 
 # Docker
 docker-data/
+volumes/
 
 # Testing
-test_doc.txt
+
 

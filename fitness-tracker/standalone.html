@@ -1,0 +1,986 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fitness Tracker - 运动健康助手</title>
+    <style>
+        /* 玻璃质感UI设计 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 25%, #f093fb 50%, #f5576c 75%, #4facfe 100%);
+            background-size: 400% 400%;
+            animation: gradientShift 15s ease infinite;
+            min-height: 100vh;
+            color: #333;
+            overflow-x: hidden;
+        }
+
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .app {
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        /* 玻璃效果卡片 */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+            padding: 20px;
+            margin: 10px 0;
+            transition: all 0.3s ease;
+        }
+
+        .glass-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 40px 0 rgba(31, 38, 135, 0.45);
+        }
+
+        /* 导航栏 */
+        .navbar {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(15px);
+            border-radius: 15px;
+            padding: 15px 30px;
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .navbar h1 {
+            color: white;
+            font-size: 24px;
+            font-weight: 600;
+        }
+
+        .nav-tabs {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .nav-tab {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            padding: 10px 20px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 14px;
+            border: none;
+        }
+
+        .nav-tab:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .nav-tab.active {
+            background: rgba(255, 255, 255, 0.3);
+            border-color: rgba(255, 255, 255, 0.5);
+        }
+
+        /* 表单样式 */
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: white;
+            font-weight: 500;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            box-sizing: border-box;
+        }
+
+        .form-control::placeholder {
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: rgba(255, 255, 255, 0.4);
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 10px;
+            padding: 12px 24px;
+            color: white;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 5px;
+        }
+
+        .btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-1px);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #ff5252 0%, #26a69a 50%, #2196f3 100%);
+            box-shadow: 0 8px 25px rgba(255, 107, 107, 0.4);
+            transform: translateY(-3px);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #56ab2f 0%, #a8e063 100%);
+            border: none;
+        }
+
+        /* 统计卡片 */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            text-align: center;
+            color: white;
+        }
+
+        .stat-value {
+            font-size: 32px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        /* 图表容器 */
+        .chart-container {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 20px;
+            margin: 20px 0;
+            height: 300px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        /* 记录列表 */
+        .record-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .record-item {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+        }
+
+        .record-date {
+            font-weight: 500;
+        }
+
+        .record-value {
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .navbar {
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            .nav-tabs {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+            
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 15px;
+            }
+            
+            .app {
+                padding: 10px;
+            }
+            
+            .glass-card {
+                padding: 15px;
+            }
+            
+            .record-item {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 5px;
+            }
+        }
+
+        /* 滚动条样式 */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 10px;
+        }
+
+        /* 动画效果 */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        .text-rainbow {
+            background: linear-gradient(90deg, #ff6b6b, #4ecdc4, #45b7d1, #96ceb4, #feca57, #ff6b6b);
+            background-size: 200% 100%;
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: rainbow 3s linear infinite;
+        }
+
+        @keyframes rainbow {
+            0% { background-position: 0% 50%; }
+            25% { background-position: 25% 50%; }
+            50% { background-position: 100% 50%; }
+            75% { background-position: 75% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        h3 {
+            color: white;
+            margin-bottom: 20px;
+        }
+
+        .stopwatch {
+            font-size: 48px;
+            color: white;
+            text-align: center;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+
+        .goal-tabs {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .recommendation-item {
+            margin-bottom: 10px;
+            padding-left: 20px;
+            position: relative;
+            color: rgba(255,255,255,0.9);
+        }
+
+        .recommendation-item:before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            color: #2ecc71;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // 体重管理组件
+        const WeightManager = ({ weightData, setWeightData }) => {
+            const [weight, setWeight] = useState('');
+            const [targetWeight, setTargetWeight] = useState('');
+            const [height, setHeight] = useState('');
+
+            const addWeightRecord = () => {
+                if (!weight) return;
+                
+                const newRecord = {
+                    id: Date.now(),
+                    weight: parseFloat(weight),
+                    date: new Date().toLocaleDateString('zh-CN')
+                };
+                
+                setWeightData([newRecord, ...weightData]);
+                setWeight('');
+            };
+
+            const calculateBMI = () => {
+                if (!height || !weightData.length) return null;
+                const latestWeight = weightData[0]?.weight;
+                if (!latestWeight) return null;
+                
+                const heightInMeters = parseFloat(height) / 100;
+                return (latestWeight / (heightInMeters * heightInMeters)).toFixed(1);
+            };
+
+            const getBMICategory = (bmi) => {
+                if (bmi < 18.5) return { text: '偏瘦', color: '#3498db' };
+                if (bmi < 24) return { text: '正常', color: '#2ecc71' };
+                if (bmi < 28) return { text: '偏胖', color: '#f39c12' };
+                return { text: '肥胖', color: '#e74c3c' };
+            };
+
+            const getWeightTrend = () => {
+                if (weightData.length < 2) return null;
+                const recent = weightData.slice(0, 2);
+                const difference = recent[0].weight - recent[1].weight;
+                return difference > 0 ? '下降' : difference < 0 ? '上升' : '稳定';
+            };
+
+            const currentBMI = calculateBMI();
+            const bmiCategory = currentBMI ? getBMICategory(currentBMI) : null;
+            const weightTrend = getWeightTrend();
+
+            return (
+                <div className="weight-manager fade-in">
+                    {/* 统计卡片 */}
+                    <div className="stats-grid">
+                        <div className="glass-card stat-card">
+                            <div className="stat-value">
+                                {weightData.length > 0 ? weightData[0].weight : '--'} kg
+                            </div>
+                            <div className="stat-label">当前体重</div>
+                        </div>
+                        
+                        <div className="glass-card stat-card">
+                            <div className="stat-value">{currentBMI || '--'}</div>
+                            <div className="stat-label">BMI指数</div>
+                            {bmiCategory && (
+                                <div style={{ color: bmiCategory.color, fontSize: '12px' }}>
+                                    {bmiCategory.text}
+                                </div>
+                            )}
+                        </div>
+                        
+                        <div className="glass-card stat-card">
+                            <div className="stat-value">{weightTrend || '--'}</div>
+                            <div className="stat-label">体重趋势</div>
+                        </div>
+                        
+                        <div className="glass-card stat-card">
+                            <div className="stat-value">{weightData.length}</div>
+                            <div className="stat-label">记录天数</div>
+                        </div>
+                    </div>
+
+                    {/* 添加记录表单 */}
+                    <div className="glass-card">
+                        <h3>📝 添加体重记录</h3>
+                        
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px' }}>
+                            <div className="form-group">
+                                <label>体重 (kg)</label>
+                                <input
+                                    type="number"
+                                    step="0.1"
+                                    className="form-control"
+                                    placeholder="请输入体重"
+                                    value={weight}
+                                    onChange={(e) => setWeight(e.target.value)}
+                                />
+                            </div>
+                            
+                            <div className="form-group">
+                                <label>身高 (cm)</label>
+                                <input
+                                    type="number"
+                                    className="form-control"
+                                    placeholder="请输入身高"
+                                    value={height}
+                                    onChange={(e) => setHeight(e.target.value)}
+                                />
+                            </div>
+                            
+                            <div className="form-group">
+                                <label>目标体重 (kg)</label>
+                                <input
+                                    type="number"
+                                    step="0.1"
+                                    className="form-control"
+                                    placeholder="请输入目标体重"
+                                    value={targetWeight}
+                                    onChange={(e) => setTargetWeight(e.target.value)}
+                                />
+                            </div>
+                        </div>
+                        
+                        <button className="btn btn-primary" onClick={addWeightRecord}>
+                            添加记录
+                        </button>
+                    </div>
+
+                    {/* 历史记录 */}
+                    {weightData.length > 0 && (
+                        <div className="glass-card">
+                            <h3>📋 历史记录</h3>
+                            <div className="record-list">
+                                {weightData.map((record) => (
+                                    <div key={record.id} className="record-item">
+                                        <div className="record-date">{record.date}</div>
+                                        <div className="record-value">{record.weight} kg</div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        // 跑步记录组件
+        const RunningTracker = ({ runningData, setRunningData }) => {
+            const [distance, setDistance] = useState('');
+            const [time, setTime] = useState('');
+            const [isRunning, setIsRunning] = useState(false);
+            const [startTime, setStartTime] = useState(null);
+            const [elapsedTime, setElapsedTime] = useState(0);
+
+            useEffect(() => {
+                let interval;
+                if (isRunning && startTime) {
+                    interval = setInterval(() => {
+                        setElapsedTime(Date.now() - startTime);
+                    }, 1000);
+                }
+                return () => clearInterval(interval);
+            }, [isRunning, startTime]);
+
+            const startStopwatch = () => {
+                if (!isRunning) {
+                    setStartTime(Date.now() - elapsedTime);
+                    setIsRunning(true);
+                } else {
+                    setIsRunning(false);
+                }
+            };
+
+            const resetStopwatch = () => {
+                setIsRunning(false);
+                setStartTime(null);
+                setElapsedTime(0);
+            };
+
+            const formatTime = (ms) => {
+                const totalSeconds = Math.floor(ms / 1000);
+                const minutes = Math.floor(totalSeconds / 60);
+                const seconds = totalSeconds % 60;
+                return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            };
+
+            const addRunningRecord = () => {
+                if (!distance || !time) return;
+                
+                const [minutes, seconds] = time.split(':').map(Number);
+                const totalMinutes = minutes + (seconds || 0) / 60;
+                const pace = totalMinutes / parseFloat(distance);
+                
+                const newRecord = {
+                    id: Date.now(),
+                    distance: parseFloat(distance),
+                    time: time,
+                    pace: pace.toFixed(2),
+                    date: new Date().toLocaleDateString('zh-CN'),
+                    timestamp: new Date().toLocaleString('zh-CN')
+                };
+                
+                setRunningData([newRecord, ...runningData]);
+                setDistance('');
+                setTime('');
+                resetStopwatch();
+            };
+
+            const calculateStats = () => {
+                if (runningData.length === 0) return { totalDistance: 0, totalTime: 0, avgPace: 0 };
+                
+                const totalDistance = runningData.reduce((sum, record) => sum + record.distance, 0);
+                const avgPace = runningData.reduce((sum, record) => sum + parseFloat(record.pace), 0) / runningData.length;
+                
+                return {
+                    totalDistance: totalDistance.toFixed(1),
+                    avgPace: avgPace.toFixed(2),
+                    runCount: runningData.length
+                };
+            };
+
+            const stats = calculateStats();
+
+            return (
+                <div className="running-tracker fade-in">
+                    {/* 统计卡片 */}
+                    <div className="stats-grid">
+                        <div className="glass-card stat-card">
+                            <div className="stat-value">{stats.totalDistance} km</div>
+                            <div className="stat-label">总距离</div>
+                        </div>
+                        
+                        <div className="glass-card stat-card">
+                            <div className="stat-value">{stats.avgPace} min/km</div>
+                            <div className="stat-label">平均配速</div>
+                        </div>
+                        
+                        <div className="glass-card stat-card">
+                            <div className="stat-value">{stats.runCount}</div>
+                            <div className="stat-label">跑步次数</div>
+                        </div>
+                        
+                        <div className="glass-card stat-card">
+                            <div className="stat-value">
+                                {stats.runCount > 0 ? (stats.totalDistance / stats.runCount).toFixed(1) : '0'} km
+                            </div>
+                            <div className="stat-label">平均距离</div>
+                        </div>
+                    </div>
+
+                    {/* 跑步记录表单 */}
+                    <div className="glass-card">
+                        <h3>🏃‍♂️ 记录跑步数据</h3>
+                        
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px' }}>
+                            <div className="form-group">
+                                <label>距离 (km)</label>
+                                <input
+                                    type="number"
+                                    step="0.1"
+                                    className="form-control"
+                                    placeholder="请输入跑步距离"
+                                    value={distance}
+                                    onChange={(e) => setDistance(e.target.value)}
+                                />
+                            </div>
+                            
+                            <div className="form-group">
+                                <label>时间 (分钟:秒)</label>
+                                <input
+                                    type="text"
+                                    className="form-control"
+                                    placeholder="格式: 25:30"
+                                    value={time}
+                                    onChange={(e) => setTime(e.target.value)}
+                                />
+                            </div>
+                        </div>
+
+                        {/* 秒表功能 */}
+                        <div className="glass-card" style={{ marginTop: '20px', background: 'rgba(255,255,255,0.05)' }}>
+                            <h4>⏱️ 秒表</h4>
+                            <div className="stopwatch">
+                                {formatTime(elapsedTime)}
+                            </div>
+                            <div style={{ textAlign: 'center' }}>
+                                <button 
+                                    className={`btn ${isRunning ? 'btn-primary' : ''}`}
+                                    onClick={startStopwatch}
+                                    style={{ marginRight: '10px' }}
+                                >
+                                    {isRunning ? '暂停' : '开始'}
+                                </button>
+                                <button 
+                                    className="btn"
+                                    onClick={resetStopwatch}
+                                >
+                                    重置
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <button 
+                            className="btn btn-primary" 
+                            onClick={addRunningRecord}
+                            style={{ marginTop: '15px' }}
+                        >
+                            添加记录
+                        </button>
+                    </div>
+
+                    {/* 历史记录 */}
+                    {runningData.length > 0 && (
+                        <div className="glass-card">
+                            <h3>📋 跑步历史</h3>
+                            <div className="record-list">
+                                {runningData.map((record) => (
+                                    <div key={record.id} className="record-item">
+                                        <div>
+                                            <div className="record-date">{record.date}</div>
+                                            <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.7)' }}>
+                                                {record.timestamp}
+                                            </div>
+                                        </div>
+                                        <div style={{ textAlign: 'center' }}>
+                                            <div className="record-value">{record.distance} km</div>
+                                            <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.7)' }}>
+                                                {record.time}
+                                            </div>
+                                        </div>
+                                        <div style={{ textAlign: 'right' }}>
+                                            <div className="record-value">{record.pace} min/km</div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        // 健康推荐组件
+        const HealthRecommendations = ({ weightData, runningData }) => {
+            const [selectedGoal, setSelectedGoal] = useState('general');
+
+            const getUserStats = () => {
+                const latestWeight = weightData.length > 0 ? weightData[0].weight : null;
+                const weightTrend = weightData.length >= 2 ? 
+                    weightData[0].weight - weightData[1].weight : 0;
+                
+                const totalRunning = runningData.reduce((sum, run) => sum + run.distance, 0);
+                const avgPace = runningData.length > 0 ? 
+                    runningData.reduce((sum, run) => sum + parseFloat(run.pace), 0) / runningData.length : 0;
+                
+                return {
+                    latestWeight,
+                    weightTrend,
+                    totalRunning,
+                    avgPace,
+                    runFrequency: runningData.length
+                };
+            };
+
+            const generateRecommendations = (goal) => {
+                const stats = getUserStats();
+                
+                if (goal === 'weight-loss') {
+                    return [
+                        {
+                            title: '🥗 饮食建议',
+                            items: [
+                                '控制每日热量摄入，建议比基础代谢少300-500大卡',
+                                '增加蛋白质摄入，每公斤体重1.2-1.6克',
+                                '多食用高纤维蔬菜，增加饱腹感',
+                                '避免高糖、高脂肪的加工食品'
+                            ]
+                        },
+                        {
+                            title: '🏃 运动计划',
+                            items: [
+                                '每周进行3-4次有氧运动，每次30-45分钟',
+                                '结合2-3次力量训练，增加肌肉量',
+                                '建议心率保持在最大心率的60-70%',
+                                '可选择快走、慢跑、游泳等低冲击运动'
+                            ]
+                        }
+                    ];
+                } else if (goal === 'muscle-gain') {
+                    return [
+                        {
+                            title: '💪 饮食建议',
+                            items: [
+                                '增加热量摄入，建议比基础代谢多300-500大卡',
+                                '蛋白质摄入量提高到每公斤体重1.6-2.2克',
+                                '训练后30分钟内补充蛋白质和碳水化合物',
+                                '多食用瘦肉、鸡蛋、豆制品等优质蛋白'
+                            ]
+                        },
+                        {
+                            title: '🏋️ 训练计划',
+                            items: [
+                                '每周进行3-4次力量训练',
+                                '采用渐进式超负荷原则，逐步增加重量',
+                                '每个肌群每周训练2-3次',
+                                '保证动作标准，避免受伤'
+                            ]
+                        }
+                    ];
+                } else {
+                    return [
+                        {
+                            title: '🌟 通用健康建议',
+                            items: [
+                                '保持规律作息，早睡早起',
+                                '均衡饮食，多吃蔬菜水果',
+                                '适量运动，每周至少150分钟中等强度运动',
+                                '保持心理健康，学会压力管理'
+                            ]
+                        }
+                    ];
+                }
+            };
+
+            const stats = getUserStats();
+            const recommendations = generateRecommendations(selectedGoal);
+
+            const goals = [
+                { id: 'general', label: '综合健康', icon: '🌟' },
+                { id: 'weight-loss', label: '减脂瘦身', icon: '🔥' },
+                { id: 'muscle-gain', label: '增肌塑形', icon: '💪' },
+                { id: 'endurance', label: '提升耐力', icon: '⚡' }
+            ];
+
+            return (
+                <div className="health-recommendations fade-in">
+                    {/* 用户状态概览 */}
+                    <div className="glass-card">
+                        <h3>📊 您的健康状态</h3>
+                        <div className="stats-grid">
+                            <div className="stat-card">
+                                <div className="stat-value">
+                                    {stats.latestWeight ? `${stats.latestWeight} kg` : '--'}
+                                </div>
+                                <div className="stat-label">当前体重</div>
+                            </div>
+                            
+                            <div className="stat-card">
+                                <div className="stat-value">{stats.totalRunning} km</div>
+                                <div className="stat-label">累计跑步</div>
+                            </div>
+                            
+                            <div className="stat-card">
+                                <div className="stat-value">{stats.runFrequency} 次</div>
+                                <div className="stat-label">跑步次数</div>
+                            </div>
+                            
+                            <div className="stat-card">
+                                <div className="stat-value">
+                                    {stats.avgPace > 0 ? `${stats.avgPace} min/km` : '--'}
+                                </div>
+                                <div className="stat-label">平均配速</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* 目标选择 */}
+                    <div className="glass-card">
+                        <h3>🎯 选择您的健康目标</h3>
+                        <div className="goal-tabs">
+                            {goals.map(goal => (
+                                <button
+                                    key={goal.id}
+                                    className={`nav-tab ${selectedGoal === goal.id ? 'active' : ''}`}
+                                    onClick={() => setSelectedGoal(goal.id)}
+                                >
+                                    <span>{goal.icon}</span> {goal.label}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* 健康推荐 */}
+                    <div>
+                        {recommendations.map((rec, index) => (
+                            <div key={index} className="glass-card" style={{ marginBottom: '20px' }}>
+                                <h4>{rec.title}</h4>
+                                <div>
+                                    {rec.items.map((item, itemIndex) => (
+                                        <div key={itemIndex} className="recommendation-item">
+                                            {item}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* 激励卡片 */}
+                    <div className="glass-card" style={{ 
+                        background: 'linear-gradient(135deg, rgba(46, 204, 113, 0.1) 0%, rgba(39, 174, 96, 0.1) 100%)',
+                        border: '1px solid rgba(46, 204, 113, 0.3)',
+                        textAlign: 'center'
+                    }}>
+                        <h3 style={{ color: '#2ecc71', marginBottom: '15px' }}>💡 今日激励</h3>
+                        <p style={{ 
+                            color: 'rgba(255,255,255,0.9)', 
+                            fontSize: '16px',
+                            lineHeight: '1.6',
+                            fontStyle: 'italic'
+                        }}>
+                            "健康不是一切，但没有健康就没有一切。坚持运动，合理饮食，每一个小小的进步都在让你成为更好的自己！"
+                        </p>
+                    </div>
+                </div>
+            );
+        };
+
+        // 主应用组件
+        function App() {
+            const [activeTab, setActiveTab] = useState('weight');
+            const [weightData, setWeightData] = useState([]);
+            const [runningData, setRunningData] = useState([]);
+
+            // 从本地存储加载数据
+            useEffect(() => {
+                try {
+                    const savedWeightData = localStorage.getItem('weightData');
+                    const savedRunningData = localStorage.getItem('runningData');
+                    
+                    if (savedWeightData) {
+                        setWeightData(JSON.parse(savedWeightData));
+                    }
+                    
+                    if (savedRunningData) {
+                        setRunningData(JSON.parse(savedRunningData));
+                    }
+                } catch (error) {
+                    console.error('加载数据失败:', error);
+                }
+            }, []);
+
+            // 保存数据到本地存储
+            useEffect(() => {
+                try {
+                    localStorage.setItem('weightData', JSON.stringify(weightData));
+                } catch (error) {
+                    console.error('保存体重数据失败:', error);
+                }
+            }, [weightData]);
+
+            useEffect(() => {
+                try {
+                    localStorage.setItem('runningData', JSON.stringify(runningData));
+                } catch (error) {
+                    console.error('保存跑步数据失败:', error);
+                }
+            }, [runningData]);
+
+            const tabs = [
+                { id: 'weight', label: '体重管理', icon: '⚖️' },
+                { id: 'running', label: '跑步记录', icon: '🏃' },
+                { id: 'health', label: '健康方案', icon: '💪' }
+            ];
+
+            return (
+                <div className="app">
+                    {/* 导航栏 */}
+                    <nav className="navbar">
+                        <h1>🏃‍♂️ Fitness Tracker</h1>
+                        <div className="nav-tabs">
+                            {tabs.map(tab => (
+                                <button
+                                    key={tab.id}
+                                    className={`nav-tab ${activeTab === tab.id ? 'active' : ''}`}
+                                    onClick={() => setActiveTab(tab.id)}
+                                >
+                                    <span>{tab.icon}</span> {tab.label}
+                                </button>
+                            ))}
+                        </div>
+                    </nav>
+
+                    {/* 主内容区域 */}
+                    <main>
+                        {activeTab === 'weight' && (
+                            <WeightManager 
+                                weightData={weightData} 
+                                setWeightData={setWeightData} 
+                            />
+                        )}
+                        
+                        {activeTab === 'running' && (
+                            <RunningTracker 
+                                runningData={runningData} 
+                                setRunningData={setRunningData} 
+                            />
+                        )}
+                        
+                        {activeTab === 'health' && (
+                            <HealthRecommendations 
+                                weightData={weightData}
+                                runningData={runningData}
+                            />
+                        )}
+                    </main>
+                </div>
+            );
+        }
+
+        // 渲染应用
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>

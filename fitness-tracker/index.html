@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fitness Tracker - 运动健康助手</title>
+    <link rel="stylesheet" href="src/styles.css">
+</head>
+<body>
+    <div id="root"></div>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script crossorigin src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script type="text/babel" data-presets="env,react" data-plugins="transform-modules-umd">
+        // 内联所有React组件代码
+        const { useState, useEffect } = React;
+
+        // 体重管理组件
+        const WeightManager = ({ weightData, setWeightData }) => {
+            const [weight, setWeight] = useState('');
+            const [targetWeight, setTargetWeight] = useState('');
+            const [height, setHeight] = useState('');
+
+            const addWeightRecord = () => {
+                if (!weight) return;
+                
+                const newRecord = {
+                    id: Date.now(),
+                    weight: parseFloat(weight),
+                    date: new Date().toLocaleDateString('zh-CN')
+                };
+                
+                setWeightData([newRecord, ...weightData]);
+                setWeight('');
+            };
+
+            const calculateBMI = () => {
+                if (!height || !weightData.length) return null;
+                const latestWeight = weightData[0]?.weight;
+                if (!latestWeight) return null;
+                
+                const heightInMeters = parseFloat(height) / 100;
+                return (latestWeight / (heightInMeters * heightInMeters)).toFixed(1);
+            };
+
+            const getBMICategory = (bmi) => {
+                if (bmi < 18.5) return { text: '偏瘦', color: '#3498db' };
+                if (bmi < 24) return { text: '正常', color: '#2ecc71' };
+                if (bmi < 28) return { text: '偏胖', color: '#f39c12' };
+                return { text: '肥胖', color: '#e74c3c' };
+            };
+
+            const getWeightTrend = () => {
+                if (weightData.length < 2) return null;
+                const recent = weightData.slice(0, 2);
+                const difference = recent[0].weight - recent[1].weight;
+                return difference > 0 ? '下降' : difference < 0 ? '上升' : '稳定';
+            };
+
+            const currentBMI = calculateBMI();
+            const bmiCategory = currentBMI ? getBMICategory(currentBMI) : null;
+            const weightTrend = getWeightTrend();
+
+            return (
+                <div className="weight-manager fade-in">
+                    {/* 统计卡片 */}
+                    <div className="stats-grid">
+                        <div className="glass-card stat-card weight">
+                            <div className="stat-value">
+                                {weightData.length > 0 ? weightData[0].weight : '--'} kg
+                            </div>
+                            <div className="stat-label">⚖️ 当前体重</div>
+                        </div>
+                        
+                        <div className="glass-card stat-card bmi">
+                            <div className="stat-value">{currentBMI || '--'}</div>
+                            <div className="stat-label">📊 BMI指数</div>
+                            {bmiCategory && (
+                                <div style={{ color: bmiCategory.color, fontSize: '12px', fontWeight: 'bold' }}>
+                                    {bmiCategory.text}
+                                </div>
+                            )}
+                        </div>
+                        
+                        <div className="glass-card stat-card">
+                            <div className="stat-value text-rainbow">{weightTrend || '--'}</div>
+                            <div className="stat-label">📈 体重趋势</div>
+                        </div>
+                        
+                        <div className="glass-card stat-card health">
+                            <div className="stat-value">{weightData.length}</div>
+                            <div className="stat-label">📅 记录天数</div>
+                        </div>
+                    </div>
+
+                    {/* 添加记录表单 */}
+                    <div className="glass-card">
+                        <h3 style={{ color: 'white', marginBottom: '20px' }}>📝 添加体重记录</h3>
+                        
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px' }}>
+                            <div className="form-group">
+                                <label>体重 (kg)</label>
+                                <input
+                                    type="number"
+                                    step="0.1"
+                                    className="form-control"
+                                    placeholder="请输入体重"
+                                    value={weight}
+                                    onChange={(e) => setWeight(e.target.value)}
+                                />
+                            </div>
+                            
+                            <div className="form-group">
+                                <label>身高 (cm)</label>
+                                <input
+                                    type="number"
+                                    className="form-control"
+                                    placeholder="请输入身高"
+                                    value={height}
+                                    onChange={(e) => setHeight(e.target.value)}
+                                />
+                            </div>
+                            
+                            <div className="form-group">
+                                <label>目标体重 (kg)</label>
+                                <input
+                                    type="number"
+                                    step="0.1"
+                                    className="form-control"
+                                    placeholder="请输入目标体重"
+                                    value={targetWeight}
+                                    onChange={(e) => setTargetWeight(e.target.value)}
+                                />
+                            </div>
+                        </div>
+                        
+                        <button 
+                            className="btn btn-primary pulse" 
+                            onClick={addWeightRecord}
+                            style={{ marginTop: '15px' }}
+                        >
+                            ➕ 添加记录
+                        </button>
+                    </div>
+
+                    {/* 历史记录 */}
+                    {weightData.length > 0 && (
+                        <div className="glass-card">
+                            <h3 style={{ color: 'white', marginBottom: '20px' }}>📋 历史记录</h3>
+                            <div className="record-list">
+                                {weightData.map((record) => (
+                                    <div key={record.id} className="record-item">
+                                        <div className="record-date">{record.date}</div>
+                                        <div className="record-value">{record.weight} kg</div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        // 跑步记录组件
+        const RunningTracker = ({ runningData, setRunningData }) => {
+            const [distance, setDistance] = useState('');
+            const [time, setTime] = useState('');
+            const [isRunning, setIsRunning] = useState(false);
+            const [startTime, setStartTime] = useState(null);
+            const [elapsedTime, setElapsedTime] = useState(0);
+
+            useEffect(() => {
+                let interval;
+                if (isRunning && startTime) {
+                    interval = setInterval(() => {
+                        setElapsedTime(Date.now() - startTime);
+                    }, 1000);
+                }
+                return () => clearInterval(interval);
+            }, [isRunning, startTime]);
+
+            const startStopwatch = () => {
+                if (!isRunning) {
+                    setStartTime(Date.now() - elapsedTime);
+                    setIsRunning(true);
+                } else {
+                    setIsRunning(false);
+                }
+            };
+
+            const resetStopwatch = () => {
+                setIsRunning(false);
+                setStartTime(null);
+                setElapsedTime(0);
+            };
+
+            const formatTime = (ms) => {
+                const totalSeconds = Math.floor(ms / 1000);
+                const minutes = Math.floor(totalSeconds / 60);
+                const seconds = totalSeconds % 60;
+                return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            };
+
+            const addRunningRecord = () => {
+                if (!distance || !time) return;
+                
+                const [minutes, seconds] = time.split(':').map(Number);
+                const totalMinutes = minutes + (seconds || 0) / 60;
+                const pace = totalMinutes / parseFloat(distance);
+                
+                const newRecord = {
+                    id: Date.now(),
+                    distance: parseFloat(distance),
+                    time: time,
+                    pace: pace.toFixed(2),
+                    date: new Date().toLocaleDateString('zh-CN'),
+                    timestamp: new Date().toLocaleString('zh-CN')
+                };
+                
+                setRunningData([newRecord, ...runningData]);
+                setDistance('');
+                setTime('');
+                resetStopwatch();
+            };
+
+            const calculateStats = () => {
+                if (runningData.length === 0) return { totalDistance: 0, totalTime: 0, avgPace: 0 };
+                
+                const totalDistance = runningData.reduce((sum, record) => sum + record.distance, 0);
+                const avgPace = runningData.reduce((sum, record) => sum + parseFloat(record.pace), 0) / runningData.length;
+                
+                return {
+                    totalDistance: totalDistance.toFixed(1),
+                    avgPace: avgPace.toFixed(2),
+                    runCount: runningData.length
+                };
+            };
+
+            const stats = calculateStats();
+
+            return (
+                <div className="running-tracker fade-in">
+                    {/* 统计卡片 */}
+                    <div className="stats-grid">
+                        <div className="glass-card stat-card running">
+                            <div className="stat-value">{stats.totalDistance} km</div>
+                            <div className="stat-label">🏃 总距离</div>
+                        </div>
+                        
+                        <div className="glass-card stat-card info">
+                            <div className="stat-value">{stats.avgPace} min/km</div>
+                            <div className="stat-label">⚡ 平均配速</div>
+                        </div>
+                        
+                        <div className="glass-card stat-card success">
+                            <div className="stat-value">{stats.runCount}</div>
+                            <div className="stat-label">🎯 跑步次数</div>
+                        </div>
+                        
+                        <div className="glass-card stat-card warning">
+                            <div className="stat-value">
+                                {stats.runCount > 0 ? (stats.totalDistance / stats.runCount).toFixed(1) : '0'} km
+                            </div>
+                            <div className="stat-label">📊 平均距离</div>
+                        </div>
+                    </div>
+
+                    {/* 跑步记录表单 */}
+                    <div className="glass-card">
+                        <h3 style={{ color: 'white', marginBottom: '20px' }}>🏃‍♂️ 记录跑步数据</h3>
+                        
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px' }}>
+                            <div className="form-group">
+                                <label>距离 (km)</label>
+                                <input
+                                    type="number"
+                                    step="0.1"
+                                    className="form-control"
+                                    placeholder="请输入跑步距离"
+                                    value={distance}
+                                    onChange={(e) => setDistance(e.target.value)}
+                                />
+                            </div>
+                            
+                            <div className="form-group">
+                                <label>时间 (分钟:秒)</label>
+                                <input
+                                    type="text"
+                                    className="form-control"
+                                    placeholder="格式: 25:30"
+                                    value={time}
+                                    onChange={(e) => setTime(e.target.value)}
+                                />
+                            </div>
+                        </div>
+
+                        {/* 秒表功能 */}
+                        <div className="glass-card" style={{ marginTop: '20px', background: 'rgba(255,255,255,0.05)' }}>
+                            <h4 style={{ color: 'white', marginBottom: '15px' }}>⏱️ 秒表</h4>
+                            <div style={{ 
+                                fontSize: '48px', 
+                                color: 'white', 
+                                textAlign: 'center', 
+                                fontWeight: 'bold',
+                                marginBottom: '20px'
+                            }}>
+                                {formatTime(elapsedTime)}
+                            </div>
+                            <div style={{ textAlign: 'center' }}>
+                                <button 
+                                    className={`btn ${isRunning ? 'btn-primary' : ''}`}
+                                    onClick={startStopwatch}
+                                    style={{ marginRight: '10px' }}
+                                >
+                                    {isRunning ? '暂停' : '开始'}
+                                </button>
+                                <button 
+                                    className="btn"
+                                    onClick={resetStopwatch}
+                                >
+                                    重置
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <button 
+                            className="btn btn-success pulse" 
+                            onClick={addRunningRecord}
+                            style={{ marginTop: '15px' }}
+                        >
+                            🏃 添加记录
+                        </button>
+                    </div>
+
+                    {/* 历史记录 */}
+                    {runningData.length > 0 && (
+                        <div className="glass-card">
+                            <h3 style={{ color: 'white', marginBottom: '20px' }}>📋 跑步历史</h3>
+                            <div className="record-list">
+                                {runningData.map((record) => (
+                                    <div key={record.id} className="record-item">
+                                        <div>
+                                            <div className="record-date">{record.date}</div>
+                                            <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.7)' }}>
+                                                {record.timestamp}
+                                            </div>
+                                        </div>
+                                        <div style={{ textAlign: 'center' }}>
+                                            <div className="record-value">{record.distance} km</div>
+                                            <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.7)' }}>
+                                                {record.time}
+                                            </div>
+                                        </div>
+                                        <div style={{ textAlign: 'right' }}>
+                                            <div className="record-value">{record.pace} min/km</div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        // 健康推荐组件
+        const HealthRecommendations = ({ weightData, runningData }) => {
+            const [selectedGoal, setSelectedGoal] = useState('general');
+
+            const getUserStats = () => {
+                const latestWeight = weightData.length > 0 ? weightData[0].weight : null;
+                const weightTrend = weightData.length >= 2 ? 
+                    weightData[0].weight - weightData[1].weight : 0;
+                
+                const totalRunning = runningData.reduce((sum, run) => sum + run.distance, 0);
+                const avgPace = runningData.length > 0 ? 
+                    runningData.reduce((sum, run) => sum + parseFloat(run.pace), 0) / runningData.length : 0;
+                
+                return {
+                    latestWeight,
+                    weightTrend,
+                    totalRunning,
+                    avgPace,
+                    runFrequency: runningData.length
+                };
+            };
+
+            const generateRecommendations = (goal) => {
+                if (goal === 'weight-loss') {
+                    return [
+                        {
+                            title: '🥗 饮食建议',
+                            items: [
+                                '控制每日热量摄入，建议比基础代谢少300-500大卡',
+                                '增加蛋白质摄入，每公斤体重1.2-1.6克',
+                                '多食用高纤维蔬菜，增加饱腹感',
+                                '避免高糖、高脂肪的加工食品'
+                            ]
+                        },
+                        {
+                            title: '🏃 运动计划',
+                            items: [
+                                '每周进行3-4次有氧运动，每次30-45分钟',
+                                '结合2-3次力量训练，增加肌肉量',
+                                '建议心率保持在最大心率的60-70%',
+                                '可选择快走、慢跑、游泳等低冲击运动'
+                            ]
+                        }
+                    ];
+                } else if (goal === 'muscle-gain') {
+                    return [
+                        {
+                            title: '💪 饮食建议',
+                            items: [
+                                '增加热量摄入，建议比基础代谢多300-500大卡',
+                                '蛋白质摄入量提高到每公斤体重1.6-2.2克',
+                                '训练后30分钟内补充蛋白质和碳水化合物',
+                                '多食用瘦肉、鸡蛋、豆制品等优质蛋白'
+                            ]
+                        }
+                    ];
+                } else {
+                    return [
+                        {
+                            title: '🌟 通用健康建议',
+                            items: [
+                                '保持规律作息，早睡早起',
+                                '均衡饮食，多吃蔬菜水果',
+                                '适量运动，每周至少150分钟中等强度运动',
+                                '保持心理健康，学会压力管理'
+                            ]
+                        }
+                    ];
+                }
+            };
+
+            const stats = getUserStats();
+            const recommendations = generateRecommendations(selectedGoal);
+
+            const goals = [
+                { id: 'general', label: '综合健康', icon: '🌟' },
+                { id: 'weight-loss', label: '减脂瘦身', icon: '🔥' },
+                { id: 'muscle-gain', label: '增肌塑形', icon: '💪' },
+                { id: 'endurance', label: '提升耐力', icon: '⚡' }
+            ];
+
+            return (
+                <div className="health-recommendations fade-in">
+                    {/* 用户状态概览 */}
+                    <div className="glass-card">
+                        <h3 style={{ color: 'white', marginBottom: '20px' }}>📊 您的健康状态</h3>
+                        <div className="stats-grid">
+                            <div className="stat-card">
+                                <div className="stat-value">
+                                    {stats.latestWeight ? `${stats.latestWeight} kg` : '--'}
+                                </div>
+                                <div className="stat-label">当前体重</div>
+                            </div>
+                            
+                            <div className="stat-card">
+                                <div className="stat-value">{stats.totalRunning} km</div>
+                                <div className="stat-label">累计跑步</div>
+                            </div>
+                            
+                            <div className="stat-card">
+                                <div className="stat-value">{stats.runFrequency} 次</div>
+                                <div className="stat-label">跑步次数</div>
+                            </div>
+                            
+                            <div className="stat-card">
+                                <div className="stat-value">
+                                    {stats.avgPace > 0 ? `${stats.avgPace} min/km` : '--'}
+                                </div>
+                                <div className="stat-label">平均配速</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* 目标选择 */}
+                    <div className="glass-card">
+                        <h3 style={{ color: 'white', marginBottom: '20px' }}>🎯 选择您的健康目标</h3>
+                        <div className="nav-tabs" style={{ justifyContent: 'center', flexWrap: 'wrap' }}>
+                            {goals.map(goal => (
+                                <button
+                                    key={goal.id}
+                                    className={`nav-tab ${selectedGoal === goal.id ? 'active' : ''}`}
+                                    onClick={() => setSelectedGoal(goal.id)}
+                                    style={{ margin: '5px' }}
+                                >
+                                    <span>{goal.icon}</span> {goal.label}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* 健康推荐 */}
+                    <div style={{ marginTop: '30px' }}>
+                        {recommendations.map((rec, index) => (
+                            <div key={index} className="glass-card" style={{ marginBottom: '20px' }}>
+                                <h4 style={{ color: 'white', marginBottom: '15px' }}>{rec.title}</h4>
+                                <div style={{ 
+                                    listStyle: 'none', 
+                                    padding: 0, 
+                                    margin: 0,
+                                    color: 'rgba(255,255,255,0.9)'
+                                }}>
+                                    {rec.items.map((item, itemIndex) => (
+                                        <div 
+                                            key={itemIndex} 
+                                            style={{ 
+                                                marginBottom: '10px',
+                                                paddingLeft: '20px',
+                                                position: 'relative'
+                                            }}
+                                        >
+                                            <span style={{ 
+                                                position: 'absolute', 
+                                                left: 0,
+                                                color: '#2ecc71'
+                                            }}>
+                                                ✓
+                                            </span>
+                                            {item}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* 激励卡片 */}
+                    <div className="glass-card" style={{ 
+                        background: 'linear-gradient(135deg, rgba(46, 204, 113, 0.1) 0%, rgba(39, 174, 96, 0.1) 100%)',
+                        border: '1px solid rgba(46, 204, 113, 0.3)',
+                        textAlign: 'center'
+                    }}>
+                        <h3 style={{ color: '#2ecc71', marginBottom: '15px' }}>💡 今日激励</h3>
+                        <p style={{ 
+                            color: 'rgba(255,255,255,0.9)', 
+                            fontSize: '16px',
+                            lineHeight: '1.6',
+                            fontStyle: 'italic'
+                        }}>
+                            "健康不是一切，但没有健康就没有一切。坚持运动，合理饮食，每一个小小的进步都在让你成为更好的自己！"
+                        </p>
+                    </div>
+                </div>
+            );
+        };
+
+        // 主应用组件
+        function App() {
+            const [activeTab, setActiveTab] = useState('weight');
+            const [weightData, setWeightData] = useState([]);
+            const [runningData, setRunningData] = useState([]);
+
+            // 从本地存储加载数据
+            useEffect(() => {
+                try {
+                    const savedWeightData = localStorage.getItem('weightData');
+                    const savedRunningData = localStorage.getItem('runningData');
+                    
+                    if (savedWeightData) {
+                        setWeightData(JSON.parse(savedWeightData));
+                    }
+                    
+                    if (savedRunningData) {
+                        setRunningData(JSON.parse(savedRunningData));
+                    }
+                } catch (error) {
+                    console.error('加载数据失败:', error);
+                }
+            }, []);
+
+            // 保存数据到本地存储
+            useEffect(() => {
+                try {
+                    localStorage.setItem('weightData', JSON.stringify(weightData));
+                } catch (error) {
+                    console.error('保存体重数据失败:', error);
+                }
+            }, [weightData]);
+
+            useEffect(() => {
+                try {
+                    localStorage.setItem('runningData', JSON.stringify(runningData));
+                } catch (error) {
+                    console.error('保存跑步数据失败:', error);
+                }
+            }, [runningData]);
+
+            const tabs = [
+                { id: 'weight', label: '体重管理', icon: '⚖️' },
+                { id: 'running', label: '跑步记录', icon: '🏃' },
+                { id: 'health', label: '健康方案', icon: '💪' }
+            ];
+
+            return (
+                <div className="app">
+                    {/* 导航栏 */}
+                    <nav className="navbar">
+                        <h1>🏃‍♂️ Fitness Tracker</h1>
+                            <div className="nav-tabs">
+                                {tabs.map(tab => (
+                                    <button
+                                        key={tab.id}
+                                        className={`nav-tab ${activeTab === tab.id ? 'active' : ''} slide-in`}
+                                        onClick={() => setActiveTab(tab.id)}
+                                        style={{ animationDelay: `${tabs.indexOf(tab) * 0.1}s` }}
+                                    >
+                                        <span>{tab.icon}</span> {tab.label}
+                                    </button>
+                                ))}
+                            </div>
+                    </nav>
+
+                    {/* 主内容区域 */}
+                    <main className="main-content">
+                        {activeTab === 'weight' && (
+                            <WeightManager 
+                                weightData={weightData} 
+                                setWeightData={setWeightData} 
+                            />
+                        )}
+                        
+                        {activeTab === 'running' && (
+                            <RunningTracker 
+                                runningData={runningData} 
+                                setRunningData={setRunningData} 
+                            />
+                        )}
+                        
+                        {activeTab === 'health' && (
+                            <HealthRecommendations 
+                                weightData={weightData}
+                                runningData={runningData}
+                            />
+                        )}
+                    </main>
+                </div>
+            );
+        }
+
+        // 渲染应用
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>

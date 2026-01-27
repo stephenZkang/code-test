@@ -1,0 +1,66 @@
+# Multi-stage Offline Dockerfile for Spring Boot Performance Test
+# This Dockerfile uses offline Maven repository for building
+
+# Stage 1: Build Stage with offline Maven
+FROM openjdk:21-jdk-slim as builder
+
+# Set working directory
+WORKDIR /app
+
+# Install curl for health checks in final image
+RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
+
+# Copy Maven wrapper and configuration
+COPY mvnw .
+COPY .mvn .mvn
+COPY pom.xml .
+
+# Copy offline Maven repository (must be provided in build context)
+COPY maven-repo /root/.m2/repository
+
+# Copy source code
+COPY src ./src
+
+# Set Maven to offline mode and use local repository
+RUN ./mvnw clean package -DskipTests -o -Dmaven.repo.local=/root/.m2/repository
+
+# Stage 2: Runtime Stage
+FROM openjdk:21-jdk-slim
+
+# Install curl for health checks and monitoring
+RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
+
+# Create application directory
+WORKDIR /app
+
+# Create non-root user for security
+RUN addgroup --system spring && adduser --system spring --ingroup spring
+
+# Copy the built JAR from builder stage
+COPY --from=builder /app/target/performance-test-app.jar app.jar
+
+# Copy monitoring scripts and configurations
+COPY scripts ./scripts
+COPY monitoring ./monitoring
+
+# Set proper ownership
+RUN chown -R spring:spring /app
+RUN chmod +x /app/scripts/*.sh
+
+# Switch to non-root user
+USER spring
+
+# Expose application port
+EXPOSE 8080
+
+# Set JVM environment variables
+ENV JAVA_OPTS="-Xms2g -Xmx4g -XX:+UseG1GC -XX:+UseStringDeduplication"
+ENV SERVER_PORT=8080
+ENV SPRING_PROFILES_ACTIVE=default
+
+# Health check configuration
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD curl -f http://localhost:8080/actuator/health || exit 1
+
+# Application startup command
+ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]

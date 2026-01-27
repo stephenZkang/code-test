@@ -50,6 +50,8 @@ docker-data/
 volumes/
 uploads/
 
+offline-build/
+
 # Testing
 
 

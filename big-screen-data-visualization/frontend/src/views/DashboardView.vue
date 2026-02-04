@@ -1,5 +1,5 @@
 <template>
-  <div class="dashboard-view" :class="{ 'fullscreen': fullscreen }">
+  <div class="dashboard-view" :class="{ 'fullscreen': fullscreen }" :style="dashboardStyle">
     <div class="dashboard-header" v-if="!fullscreen">
       <el-select v-model="selectedDashboard" placeholder="选择大屏" @change="loadDashboard">
         <el-option 
@@ -111,7 +111,18 @@ export default {
     }
   },
   computed: {
-    ...mapState(['dashboards'])
+    ...mapState(['dashboards']),
+    dashboardStyle() {
+      if (this.currentDashboard && this.currentDashboard.layout_config && this.currentDashboard.layout_config.backgroundImage) {
+        return {
+          backgroundImage: `url(${this.currentDashboard.layout_config.backgroundImage})`,
+          backgroundSize: this.currentDashboard.layout_config.backgroundSize || 'cover',
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat'
+        }
+      }
+      return {}
+    }
   },
   methods: {
     ...mapActions(['fetchDashboards']),
@@ -278,11 +289,12 @@ export default {
 }
 
 .dashboard-title h1 {
-  font-size: 2.2em;
+  font-size: 2.5em;
   margin: 0;
   color: #00d2ff;
-  text-shadow: 0 0 15px rgba(0, 210, 255, 0.5);
-  letter-spacing: 4px;
+  text-shadow: 0 0 20px rgba(0, 210, 255, 0.8), 0 0 40px rgba(0, 210, 255, 0.4);
+  letter-spacing: 6px;
+  font-weight: bold;
 }
 
 .dashboard-time {

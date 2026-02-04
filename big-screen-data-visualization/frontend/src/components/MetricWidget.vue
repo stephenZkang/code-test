@@ -3,12 +3,20 @@
     <div class="widget-header">
       <h3>{{ config.title || '指标' }}</h3>
     </div>
-    <div class="metric-content">
-      <div class="metric-value" :style="{ color: config.valueColor || '#1890ff' }">
-        {{ formatValue(displayValue) }}
+    <div class="metric-content" :class="{ 'circle-style': config.circleStyle }">
+      <div class="metric-label" v-if="displayLabel && !config.circleStyle">
+        {{ displayLabel }}
       </div>
-      <div class="metric-unit" v-if="config.unit">
-        {{ config.unit }}
+      <div class="metric-value-container">
+        <div class="metric-value" :style="{ color: config.valueColor || '#00d2ff' }">
+          {{ formatValue(displayValue) }}
+        </div>
+        <div class="metric-label-inner" v-if="displayLabel && config.circleStyle">
+          {{ displayLabel }}
+        </div>
+      </div>
+      <div class="metric-unit" v-if="config.unit || (config.suffix && !config.circleStyle)">
+        {{ config.unit || config.suffix }}
       </div>
       <div class="metric-trend" v-if="trendValue !== null">
         <i :class="trendIcon" :style="{ color: trendColor }"></i>
@@ -44,6 +52,14 @@ export default {
         return this.data.value || 0
       }
       return this.config.value || 0
+    },
+    displayLabel() {
+      if (Array.isArray(this.data) && this.data.length > 0) {
+        return this.data[0].label || ''
+      } else if (this.data && typeof this.data === 'object') {
+        return this.data.label || ''
+      }
+      return this.config.label || ''
     },
     trendValue() {
       if (this.data.length > 0 && this.data[0].trend !== undefined) {
@@ -124,12 +140,41 @@ export default {
   text-align: center;
 }
 
+.metric-value-container {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.circle-style .metric-value-container {
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  border: 2px solid rgba(0, 210, 255, 0.3);
+  background: radial-gradient(circle, rgba(0, 210, 255, 0.1) 0%, transparent 70%);
+  box-shadow: 0 0 20px rgba(0, 210, 255, 0.2), inset 0 0 20px rgba(0, 210, 255, 0.1);
+}
+
+.metric-label {
+  font-size: 1.2rem;
+  color: #fff;
+  margin-bottom: 10px;
+}
+
+.metric-label-inner {
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.8);
+  margin-top: 5px;
+}
+
 .metric-value {
-  font-size: 3.5rem;
+  font-size: 2.8rem;
   font-weight: bold;
   line-height: 1.2;
-  color: #f2d643;
-  text-shadow: 0 0 20px rgba(242, 214, 67, 0.4);
+  color: #00d2ff;
+  text-shadow: 0 0 15px rgba(0, 210, 255, 0.5);
 }
 
 .metric-unit {

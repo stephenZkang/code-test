@@ -124,8 +124,13 @@
         class="canvas-area"
         @dragover.prevent
         @drop="handleDrop"
+        @click="activeWidgetId = null"
       >
         <div class="canvas-grid-bg"></div>
+        <div class="canvas-bg-image" v-if="dashboard?.layout_config?.backgroundImage" :style="{ 
+          backgroundImage: `url(${dashboard.layout_config.backgroundImage})`,
+          backgroundSize: dashboard.layout_config.backgroundSize || 'cover'
+        }"></div>
         <grid-layout-plus
           v-model:layout="widgetLayout"
           :col-num="12"
@@ -182,11 +187,13 @@
 
       <!-- 右侧：属性配置 -->
       <div class="config-sidebar">
+        <div class="sidebar-header">
+          <i class="el-icon-setting"></i>
+          <span>{{ activeWidgetId ? '组件配置' : '大屏配置' }}</span>
+        </div>
+
+        <!-- 组件配置面板 -->
         <div v-if="activeWidget" class="config-panel">
-          <div class="sidebar-header">
-            <i class="el-icon-setting"></i>
-            <span>配置面板</span>
-          </div>
           <el-form label-position="top" size="small">
             <el-divider content-position="left">基础配置</el-divider>
             <el-form-item label="组件标题">
@@ -229,9 +236,70 @@
             </template>
           </el-form>
         </div>
+
+        <!-- 大屏全局配置面板 -->
+        <div v-else-if="dashboard" class="config-panel">
+          <el-form label-position="top" size="small">
+            <el-divider content-position="left">全局设置</el-divider>
+            <el-form-item label="大屏标题">
+              <el-input v-model="dashboard.title" placeholder="输入大屏标题"></el-input>
+            </el-form-item>
+            <el-form-item label="背景图上传">
+              <el-upload
+                class="bg-uploader"
+                action="http://localhost:8000/api/assets/upload"
+                :show-file-list="false"
+                :on-success="handleBgUploadSuccess"
+                :before-upload="beforeBgUpload"
+              >
+                <div v-if="dashboard.layout_config.backgroundImage" class="bg-preview-uploader">
+                  <img :src="dashboard.layout_config.backgroundImage" class="preview-img" />
+                  <div class="preview-mask">
+                    <el-icon><Edit /></el-icon>
+                    <span>点击更换</span>
+                  </div>
+                </div>
+                <div v-else class="uploader-placeholder">
+                  <el-icon><Plus /></el-icon>
+                  <span>上传图片</span>
+                </div>
+              </el-upload>
+            </el-form-item>
+            <el-form-item label="背景图 URL">
+              <el-input 
+                v-model="dashboard.layout_config.backgroundImage" 
+                type="textarea" 
+                :rows="2"
+                placeholder="或输入外部图片链接"
+              ></el-input>
+            </el-form-item>
+            <el-form-item label="填充方式">
+              <el-select v-model="dashboard.layout_config.backgroundSize" placeholder="选择填充方式">
+                <el-option label="等比填充 (Cover)" value="cover"></el-option>
+                <el-option label="等比包含 (Contain)" value="contain"></el-option>
+                <el-option label="拉伸铺满 (Stretch)" value="100% 100%"></el-option>
+              </el-select>
+            </el-form-item>
+            <el-divider content-position="left">推荐背景</el-divider>
+            <div class="preset-bg-list">
+              <div 
+                v-for="(bg, index) in presetBackgrounds" 
+                :key="index" 
+                class="preset-bg-item"
+                @click="dashboard.layout_config.backgroundImage = bg.url"
+              >
+                <img :src="bg.url" :title="bg.name" />
+              </div>
+              <div class="preset-bg-item clear-bg" @click="dashboard.layout_config.backgroundImage = ''">
+                <span>无背景</span>
+              </div>
+            </div>
+          </el-form>
+        </div>
+
         <div v-else class="no-selection-hint">
           <i class="el-icon-mouse"></i>
-          <p>请在画布中选中组件</p>
+          <p>加载中...</p>
         </div>
       </div>
     </div>
@@ -240,7 +308,7 @@
 
 <script>
 import { mapState, mapActions } from 'vuex'
-import { ArrowDown } from '@element-plus/icons-vue'
+import { ArrowDown, Plus, Edit } from '@element-plus/icons-vue'
 import { GridLayout, GridItem } from 'grid-layout-plus'
 import EChartsMapWidget from '../components/EChartsMapWidget.vue'
 import ThreeCityWidget from '../components/ThreeCityWidget.vue'
@@ -255,6 +323,8 @@ export default {
   name: 'DashboardEditor',
   components: {
     ArrowDown,
+    Plus,
+    Edit,
     GridLayoutPlus: GridLayout,
     GridItemPlus: GridItem,
     EChartsMapWidget,
@@ -318,7 +388,13 @@ export default {
         },
         { type: 'metric', label: '指标卡片', icon: 'el-icon-odometer' }
       ],
-      activeCategory: 'charts'
+      activeCategory: 'charts',
+      presetBackgrounds: [
+        { name: '暗蓝城市', url: 'https://img.zcool.cn/community/01f9b359b3a0bca801211d258b3a0b.jpg@1280w_1l_2o_100sh.jpg' },
+        { name: '科技线条', url: 'https://pic.616pic.com/bg_w1180/00/04/08/UfM8pY7f3S.jpg' },
+        { name: '深色网格', url: 'https://pic.616pic.com/bg_w1180/00/03/67/VpX5vY8f7T.jpg' },
+        { name: '星空宇宙', url: 'https://pic.616pic.com/bg_w1180/00/05/29/9wI3rY9f5H.jpg' }
+      ]
     }
   },
   computed: {
@@ -484,6 +560,16 @@ export default {
       try {
         const dashboardId = this.dashboard.id
         
+        // 保存大屏基本信息 (包含背景图)
+        await fetch(`http://localhost:8000/api/dashboards/${dashboardId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            title: this.dashboard.title,
+            layout_config: this.dashboard.layout_config
+          })
+        })
+
         for (const id of this.deletedWidgetIds) {
           await fetch(`http://localhost:8000/api/dashboards/widgets/${id}`, {
             method: 'DELETE'
@@ -524,6 +610,20 @@ export default {
     },
     goBack() {
       this.$router.push('/dashboards')
+    },
+    beforeBgUpload(file) {
+      const isLt2M = file.size / 1024 / 1024 < 5
+      if (!isLt2M) {
+        this.$message.error('图片大小不能超过 5MB!')
+      }
+      return isLt2M
+    },
+    handleBgUploadSuccess(res) {
+      this.dashboard.layout_config.backgroundImage = res.url
+      if (!this.dashboard.layout_config.backgroundSize) {
+        this.dashboard.layout_config.backgroundSize = 'cover'
+      }
+      this.$message.success('上传成功')
     }
   }
 }
@@ -853,5 +953,131 @@ export default {
   padding: 0 !important;
   background: #1a233a !important;
   border: 1px solid rgba(0, 191, 255, 0.4) !important;
+}
+.bg-preview {
+  margin-top: 10px;
+  width: 100%;
+  height: 120px;
+  border-radius: 4px;
+  overflow: hidden;
+  border: 1px solid rgba(0, 191, 255, 0.3);
+}
+
+.bg-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.preset-bg-list {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.preset-bg-item {
+  height: 60px;
+  border-radius: 4px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.preset-bg-item:hover {
+  border-color: #00d2ff;
+  transform: scale(1.05);
+}
+
+.preset-bg-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.clear-bg {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.05);
+  font-size: 12px;
+  color: #909399;
+}
+
+.clear-bg:hover {
+  color: #fff;
+}
+.canvas-bg-image {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-size: cover;
+  background-position: center;
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+/* Uploader Styles */
+.bg-uploader {
+  width: 100%;
+}
+
+.bg-preview-uploader {
+  width: 100%;
+  height: 120px;
+  position: relative;
+  border-radius: 4px;
+  overflow: hidden;
+  border: 1px dashed rgba(0, 191, 255, 0.4);
+}
+
+.bg-preview-uploader .preview-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.preview-mask {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  color: #fff;
+  opacity: 0;
+  transition: opacity 0.3s;
+  gap: 5px;
+}
+
+.bg-preview-uploader:hover .preview-mask {
+  opacity: 1;
+}
+
+.uploader-placeholder {
+  width: 100%;
+  height: 120px;
+  border: 1px dashed rgba(0, 191, 255, 0.4);
+  background: rgba(0, 191, 255, 0.05);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  color: #00d2ff;
+  border-radius: 4px;
+  gap: 10px;
+  transition: all 0.3s;
+}
+
+.uploader-placeholder:hover {
+  background: rgba(0, 191, 255, 0.1);
+  border-color: #00d2ff;
 }
 </style>

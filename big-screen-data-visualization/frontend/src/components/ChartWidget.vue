@@ -120,38 +120,71 @@ export default {
   },
   methods: {
     getBarOption(baseOption) {
-      return {
-        ...baseOption,
-        xAxis: {
-          type: 'category',
-          data: this.data.map(item => item.label || item.name),
-          axisLabel: {
-            rotate: 45
-          }
-        },
-        yAxis: {
-          type: 'value'
-        },
-        series: [{
+      const isMultiSeries = Array.isArray(this.data[0]?.value)
+      
+      let series = []
+      if (isMultiSeries) {
+        const seriesNames = this.config.seriesNames || []
+        const seriesCount = this.data[0].value.length
+        for (let i = 0; i < seriesCount; i++) {
+          series.push({
+            name: seriesNames[i] || `Series ${i + 1}`,
+            data: this.data.map(item => item.value[i]),
+            type: 'bar',
+            itemStyle: {
+              color: (this.config.colors && this.config.colors[i]) || undefined
+            }
+          })
+        }
+      } else {
+        series.push({
           data: this.data.map(item => item.value),
           type: 'bar',
           itemStyle: {
             color: this.config.color || '#1890ff'
           }
-        }]
+        })
+      }
+
+      return {
+        ...baseOption,
+        legend: isMultiSeries ? { show: true, bottom: 0, textStyle: { color: '#fff' } } : undefined,
+        xAxis: {
+          type: 'category',
+          data: this.data.map(item => item.label || item.name),
+          axisLabel: {
+            rotate: this.config.rotate || 0,
+            color: '#fff'
+          }
+        },
+        yAxis: {
+          type: 'value',
+          axisLabel: { color: '#fff' },
+          splitLine: { lineStyle: { color: 'rgba(255,255,255,0.1)' } }
+        },
+        series: series
       }
     },
     getLineOption(baseOption) {
-      return {
-        ...baseOption,
-        xAxis: {
-          type: 'category',
-          data: this.data.map(item => item.label || item.name)
-        },
-        yAxis: {
-          type: 'value'
-        },
-        series: [{
+      const isMultiSeries = Array.isArray(this.data[0]?.value)
+      
+      let series = []
+      if (isMultiSeries) {
+        const seriesNames = this.config.seriesNames || []
+        const seriesCount = this.data[0].value.length
+        for (let i = 0; i < seriesCount; i++) {
+          series.push({
+            name: seriesNames[i] || `Series ${i + 1}`,
+            data: this.data.map(item => item.value[i]),
+            type: 'line',
+            smooth: true,
+            itemStyle: {
+              color: (this.config.colors && this.config.colors[i]) || undefined
+            }
+          })
+        }
+      } else {
+        series.push({
           data: this.data.map(item => item.value),
           type: 'line',
           smooth: true,
@@ -161,21 +194,44 @@ export default {
           areaStyle: {
             opacity: 0.3
           }
-        }]
+        })
+      }
+
+      return {
+        ...baseOption,
+        legend: isMultiSeries ? { show: true, bottom: 0, textStyle: { color: '#fff' } } : undefined,
+        xAxis: {
+          type: 'category',
+          data: this.data.map(item => item.label || item.name),
+          axisLabel: { color: '#fff' }
+        },
+        yAxis: {
+          type: 'value',
+          axisLabel: { color: '#fff' },
+          splitLine: { lineStyle: { color: 'rgba(255,255,255,0.1)' } }
+        },
+        series: series
       }
     },
     getPieOption(baseOption) {
+      const isDonut = this.config.donut
       return {
         ...baseOption,
         tooltip: {
           trigger: 'item',
           formatter: '{a} <br/>{b}: {c} ({d}%)'
         },
+        legend: {
+          show: this.config.showLegend !== false,
+          orient: 'vertical',
+          left: 'left',
+          textStyle: { color: '#fff' }
+        },
         series: [{
           name: this.config.title,
           type: 'pie',
-          radius: '60%',
-          center: ['50%', '60%'],
+          radius: isDonut ? ['40%', '70%'] : '60%',
+          center: ['60%', '50%'],
           data: this.data.map(item => ({
             name: item.label || item.name,
             value: item.value
@@ -186,6 +242,9 @@ export default {
               shadowOffsetX: 0,
               shadowColor: 'rgba(0, 0, 0, 0.5)'
             }
+          },
+          label: {
+            color: '#fff'
           }
         }]
       }

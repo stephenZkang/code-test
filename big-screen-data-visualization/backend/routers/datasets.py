@@ -128,6 +128,10 @@ async def get_dataset_data(
 
     # Generate mock data based on query_config['type']
     data_type = dataset.query_config.get("type", "list")
+    mock_data = dataset.query_config.get("mock_data")
+
+    if mock_data:
+        return mock_data
 
     # Simple multiplier based on region for mock linkage
     multiplier = 1.0

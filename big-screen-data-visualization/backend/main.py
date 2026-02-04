@@ -3,6 +3,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from typing import List, Optional
 import uvicorn
+import os
+from fastapi.staticfiles import StaticFiles
 
 from database import SessionLocal, engine
 import models
@@ -14,11 +16,18 @@ from routers import (
     system as system_router,
     alarms as alarms_router,
     users as users_router,
+    assets as assets_router,
 )
 
 models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="态势大屏 API", version="1.0.0")
+
+# Serve static files
+UPLOAD_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "uploads")
+if not os.path.exists(UPLOAD_DIR):
+    os.makedirs(UPLOAD_DIR)
+app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
 
 app.add_middleware(
     CORSMiddleware,
@@ -36,6 +45,7 @@ app.include_router(
 app.include_router(system_router.router, prefix="/api/system", tags=["system"])
 app.include_router(alarms_router.router, prefix="/api/alarms", tags=["alarms"])
 app.include_router(users_router.router, prefix="/api/users", tags=["users"])
+app.include_router(assets_router.router, prefix="/api/assets", tags=["assets"])
 
 
 @app.get("/")

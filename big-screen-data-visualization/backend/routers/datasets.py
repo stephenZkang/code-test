@@ -130,14 +130,40 @@ async def get_dataset_data(
     data_type = dataset.query_config.get("type", "list")
     mock_data = dataset.query_config.get("mock_data")
 
-    if mock_data:
-        return mock_data
-
     # Simple multiplier based on region for mock linkage
     multiplier = 1.0
     if region:
         # Generate a semi-deterministic multiplier based on region name
-        multiplier = (len(region) % 5 + 1) * 0.5
+        # Sum ASCII values to make it more variable
+        region_sum = sum(ord(c) for c in region)
+        multiplier = (region_sum % 10 + 5) / 10.0  # Range 0.5 to 1.4
+
+    if mock_data:
+        # Apply multiplier to mock data if region is provided
+        if region:
+            if isinstance(mock_data, list):
+                new_mock = []
+                for item in mock_data:
+                    new_item = item.copy()
+                    if "value" in new_item:
+                        val = new_item["value"]
+                        if isinstance(val, list):
+                            new_item["value"] = [
+                                int(v * multiplier)
+                                if isinstance(v, (int, float))
+                                else v
+                                for v in val
+                            ]
+                        elif isinstance(val, (int, float)):
+                            new_item["value"] = int(val * multiplier)
+                    new_mock.append(new_item)
+                return new_mock
+            elif isinstance(mock_data, dict):
+                new_mock = mock_data.copy()
+                if "value" in new_mock and isinstance(new_mock["value"], (int, float)):
+                    new_mock["value"] = int(new_mock["value"] * multiplier)
+                return new_mock
+        return mock_data
 
     if data_type == "chart":
         labels = ["Mon", "Tue", "Wed", "Thu", "Fri"]

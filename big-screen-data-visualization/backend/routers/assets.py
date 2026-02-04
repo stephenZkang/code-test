@@ -13,11 +13,13 @@ UPLOAD_DIR = os.path.join(
 
 @router.post("/upload")
 async def upload_asset(file: UploadFile = File(...)):
-    if not file.content_type.startswith("image/"):
+    content_type = file.content_type
+    if not content_type or not content_type.startswith("image/"):
         raise HTTPException(status_code=400, detail="Only image files are allowed")
 
     # Generate unique filename
-    ext = os.path.splitext(file.filename)[1]
+    filename_orig = file.filename if file.filename else "unnamed.png"
+    _, ext = os.path.splitext(filename_orig)
     filename = f"{uuid.uuid4()}{ext}"
     file_path = os.path.join(UPLOAD_DIR, filename)
 

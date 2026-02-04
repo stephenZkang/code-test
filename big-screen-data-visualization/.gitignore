@@ -20,7 +20,6 @@ __pycache__/
 *$py.class
 *.so
 .Python
-install/
 develop-eggs/
 dist/
 downloads/

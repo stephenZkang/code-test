@@ -1,6 +1,6 @@
 <template>
   <div class="dashboard-view" :class="{ 'fullscreen': fullscreen }" :style="dashboardStyle">
-    <div class="dashboard-header" v-if="!fullscreen">
+    <div class="dashboard-header" v-if="!fullscreen && !isShared">
       <el-select v-model="selectedDashboard" placeholder="选择大屏" @change="loadDashboard">
         <el-option 
           v-for="dashboard in dashboards" 
@@ -21,7 +21,7 @@
       </div>
     </div>
 
-    <div class="dashboard-content" v-if="currentDashboard">
+    <div class="dashboard-content" :class="{ 'shared-view': isShared || fullscreen }" v-if="currentDashboard">
       <div class="dashboard-title">
         <h1>{{ currentDashboard.title }}</h1>
         <div class="dashboard-time">{{ currentTime }}</div>
@@ -107,7 +107,8 @@ export default {
       linkageRegion: null,
       fullscreen: false,
       currentTime: '',
-      timer: null
+      timer: null,
+      refreshTimer: null
     }
   },
   computed: {
@@ -122,6 +123,9 @@ export default {
         }
       }
       return {}
+    },
+    isShared() {
+      return this.$route.name === 'DashboardShare'
     }
   },
   methods: {
@@ -242,10 +246,19 @@ export default {
     
     this.updateTime()
     this.timer = setInterval(this.updateTime, 1000)
+
+    if (this.isShared) {
+      this.refreshTimer = setInterval(() => {
+        this.loadWidgets()
+      }, 10000)
+    }
   },
   beforeUnmount() {
     if (this.timer) {
       clearInterval(this.timer)
+    }
+    if (this.refreshTimer) {
+      clearInterval(this.refreshTimer)
     }
   }
 }
@@ -281,6 +294,10 @@ export default {
   padding: 15px;
   height: calc(100vh - 60px);
   overflow: auto;
+}
+
+.dashboard-content.shared-view {
+  height: 100vh;
 }
 
 .dashboard-title {

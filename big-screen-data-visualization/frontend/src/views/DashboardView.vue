@@ -73,6 +73,8 @@ import ChartWidget from '../components/ChartWidget.vue'
 import EChartsMapWidget from '../components/EChartsMapWidget.vue'
 import ThreeCityWidget from '../components/ThreeCityWidget.vue'
 import ThreeFactoryWidget from '../components/ThreeFactoryWidget.vue'
+import ThreeMapWidget from '../components/ThreeMapWidget.vue'
+import ThreeIslandWidget from '../components/ThreeIslandWidget.vue'
 import TableWidget from '../components/TableWidget.vue'
 import MetricWidget from '../components/MetricWidget.vue'
 import SystemStatusWidget from '../components/SystemStatusWidget.vue'
@@ -87,6 +89,8 @@ export default {
     EChartsMapWidget,
     ThreeCityWidget,
     ThreeFactoryWidget,
+    ThreeMapWidget,
+    ThreeIslandWidget,
     ChartWidget,
     TableWidget,
     MetricWidget,
@@ -187,6 +191,8 @@ export default {
         echarts_map: 'EChartsMapWidget',
         three_city: 'ThreeCityWidget',
         three_factory: 'ThreeFactoryWidget',
+        three_map: 'ThreeMapWidget',
+        three_island: 'ThreeIslandWidget',
         chart: 'ChartWidget',
         table: 'TableWidget',
         metric: 'MetricWidget',

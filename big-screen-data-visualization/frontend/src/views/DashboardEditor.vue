@@ -6,16 +6,41 @@
         <span class="dashboard-title">{{ dashboard?.title || '未命名大屏' }}</span>
       </div>
       <div class="header-center">
-        <div 
-          v-for="item in availableWidgets" 
-          :key="item.type"
-          class="draggable-widget"
-          draggable="true"
-          @dragstart="handleDragStart(item)"
-        >
-          <i :class="item.icon"></i>
-          <span>{{ item.label }}</span>
-        </div>
+        <template v-for="item in availableWidgets" :key="item.type">
+          <!-- 普通组件 -->
+          <div 
+            v-if="!item.children"
+            class="draggable-widget"
+            draggable="true"
+            @dragstart="handleDragStart(item)"
+          >
+            <i :class="item.icon"></i>
+            <span>{{ item.label }}</span>
+          </div>
+          
+          <!-- 3D 下拉组件 -->
+          <el-dropdown v-else trigger="hover" class="widget-dropdown">
+            <div class="draggable-widget">
+              <i :class="item.icon"></i>
+              <span>{{ item.label }}</span>
+              <el-icon class="el-icon--right"><arrow-down /></el-icon>
+            </div>
+            <template #dropdown>
+              <el-dropdown-menu>
+                <el-dropdown-item 
+                  v-for="sub in item.children" 
+                  :key="sub.type"
+                  @mousedown="handleDragStart(sub)"
+                >
+                  <div draggable="true" @dragstart="handleDragStart(sub)" class="dropdown-drag-item">
+                    <i :class="sub.icon"></i>
+                    {{ sub.label }}
+                  </div>
+                </el-dropdown-item>
+              </el-dropdown-menu>
+            </template>
+          </el-dropdown>
+        </template>
       </div>
       <div class="header-right">
         <el-button type="primary" @click="saveDashboard" :loading="saving">保存</el-button>
@@ -175,6 +200,8 @@ import { GridLayout, GridItem } from 'grid-layout-plus'
 import EChartsMapWidget from '../components/EChartsMapWidget.vue'
 import ThreeCityWidget from '../components/ThreeCityWidget.vue'
 import ThreeFactoryWidget from '../components/ThreeFactoryWidget.vue'
+import ThreeMapWidget from '../components/ThreeMapWidget.vue'
+import ThreeIslandWidget from '../components/ThreeIslandWidget.vue'
 import ChartWidget from '../components/ChartWidget.vue'
 import TableWidget from '../components/TableWidget.vue'
 import MetricWidget from '../components/MetricWidget.vue'
@@ -187,6 +214,8 @@ export default {
     EChartsMapWidget,
     ThreeCityWidget,
     ThreeFactoryWidget,
+    ThreeMapWidget,
+    ThreeIslandWidget,
     ChartWidget,
     TableWidget,
     MetricWidget
@@ -203,8 +232,17 @@ export default {
       draggedItem: null,
       availableWidgets: [
         { type: 'echarts_map', label: '态势地图', icon: 'el-icon-map-location' },
-        { type: 'three_city', label: '3D城市', icon: 'el-icon-office-building' },
-        { type: 'three_factory', label: '3D工厂', icon: 'el-icon-set-up' },
+        { 
+          type: 'three_group', 
+          label: '3D组件', 
+          icon: 'el-icon-view',
+          children: [
+            { type: 'three_city', label: '3D城市', icon: 'el-icon-office-building' },
+            { type: 'three_factory', label: '3D工厂', icon: 'el-icon-set-up' },
+            { type: 'three_map', label: '3D地图', icon: 'el-icon-map' },
+            { type: 'three_island', label: '3D悬浮岛', icon: 'el-icon-ship' }
+          ]
+        },
         { type: 'chart', label: '数据图表', icon: 'el-icon-pie-chart' },
         { type: 'metric', label: '指标卡片', icon: 'el-icon-odometer' },
         { type: 'table', label: '数据表格', icon: 'el-icon-tickets' }
@@ -314,6 +352,8 @@ export default {
         echarts_map: 'EChartsMapWidget',
         three_city: 'ThreeCityWidget',
         three_factory: 'ThreeFactoryWidget',
+        three_map: 'ThreeMapWidget',
+        three_island: 'ThreeIslandWidget',
         chart: 'ChartWidget',
         table: 'TableWidget',
         metric: 'MetricWidget'
@@ -623,7 +663,15 @@ export default {
   gap: 15px;
 }
 
-.no-selection-hint i {
-  font-size: 40px;
+.dropdown-drag-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  cursor: grab;
+}
+
+.widget-dropdown {
+  margin: 0;
 }
 </style>

@@ -7,19 +7,8 @@
       </div>
       <div class="header-center">
         <template v-for="item in availableWidgets" :key="item.type">
-          <!-- 普通组件 -->
-          <div 
-            v-if="!item.children"
-            class="draggable-widget"
-            draggable="true"
-            @dragstart="handleDragStart(item)"
-          >
-            <i :class="item.icon"></i>
-            <span>{{ item.label }}</span>
-          </div>
-          
           <!-- 3D 下拉组件 -->
-          <el-dropdown v-else trigger="hover" class="widget-dropdown">
+          <el-dropdown v-if="item.type === 'three_group'" trigger="hover" class="widget-dropdown">
             <div class="draggable-widget">
               <i :class="item.icon"></i>
               <span>{{ item.label }}</span>
@@ -40,6 +29,61 @@
               </el-dropdown-menu>
             </template>
           </el-dropdown>
+
+          <!-- 基础组件 (弹出面板) -->
+          <el-popover
+            v-else-if="item.type === 'data_group'"
+            placement="bottom"
+            :width="450"
+            trigger="click"
+            popper-class="widget-picker-popper"
+          >
+            <template #reference>
+              <div class="draggable-widget">
+                <i :class="item.icon"></i>
+                <span>{{ item.label }}</span>
+                <el-icon class="el-icon--right"><arrow-down /></el-icon>
+              </div>
+            </template>
+            <div class="widget-picker-panel">
+              <div class="picker-sidebar">
+                <div 
+                  v-for="cat in item.categories" 
+                  :key="cat.id"
+                  class="category-item"
+                  :class="{ active: activeCategory === cat.id }"
+                  @click="activeCategory = cat.id"
+                >
+                  {{ cat.label }}
+                </div>
+              </div>
+              <div class="picker-content">
+                <div class="widget-grid-small">
+                  <div 
+                    v-for="sub in currentCategoryWidgets" 
+                    :key="sub.label"
+                    class="picker-widget-item"
+                    draggable="true"
+                    @dragstart="handleDragStart(sub)"
+                  >
+                    <i :class="sub.icon"></i>
+                    <span>{{ sub.label }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </el-popover>
+
+          <!-- 其他普通组件 -->
+          <div 
+            v-else
+            class="draggable-widget"
+            draggable="true"
+            @dragstart="handleDragStart(item)"
+          >
+            <i :class="item.icon"></i>
+            <span>{{ item.label }}</span>
+          </div>
         </template>
       </div>
       <div class="header-right">
@@ -196,6 +240,7 @@
 
 <script>
 import { mapState, mapActions } from 'vuex'
+import { ArrowDown } from '@element-plus/icons-vue'
 import { GridLayout, GridItem } from 'grid-layout-plus'
 import EChartsMapWidget from '../components/EChartsMapWidget.vue'
 import ThreeCityWidget from '../components/ThreeCityWidget.vue'
@@ -209,6 +254,7 @@ import MetricWidget from '../components/MetricWidget.vue'
 export default {
   name: 'DashboardEditor',
   components: {
+    ArrowDown,
     GridLayoutPlus: GridLayout,
     GridItemPlus: GridItem,
     EChartsMapWidget,
@@ -243,16 +289,48 @@ export default {
             { type: 'three_island', label: '3D悬浮岛', icon: 'el-icon-ship' }
           ]
         },
-        { type: 'chart', label: '数据图表', icon: 'el-icon-pie-chart' },
-        { type: 'metric', label: '指标卡片', icon: 'el-icon-odometer' },
-        { type: 'table', label: '数据表格', icon: 'el-icon-tickets' }
-      ]
+        {
+          type: 'data_group',
+          label: '基础组件',
+          icon: 'el-icon-menu',
+          categories: [
+            {
+              id: 'charts',
+              label: '图表组件',
+              children: [
+                { type: 'chart', sub: 'bar', label: '柱状图', icon: 'el-icon-histogram' },
+                { type: 'chart', sub: 'line', label: '折线图', icon: 'el-icon-data-line' },
+                { type: 'chart', sub: 'pie', label: '饼图', icon: 'el-icon-pie-chart' },
+                { type: 'chart', sub: 'scatter', label: '散点图', icon: 'el-icon-magic-stick' },
+                { type: 'chart', sub: 'radar', label: '雷达图', icon: 'el-icon-aim' },
+                { type: 'chart', sub: 'funnel', label: '漏斗图', icon: 'el-icon-filter' }
+              ]
+            },
+            {
+              id: 'tables',
+              label: '数据表格',
+              children: [
+                { type: 'table', label: '标准表格', icon: 'el-icon-tickets' },
+                { type: 'table', sub: 'alarm', label: '告警列表', icon: 'el-icon-warning' }
+              ]
+            }
+          ]
+        },
+        { type: 'metric', label: '指标卡片', icon: 'el-icon-odometer' }
+      ],
+      activeCategory: 'charts'
     }
   },
   computed: {
     ...mapState(['datasets']),
     activeWidget() {
       return this.widgetLayout.find(w => w.i === this.activeWidgetId)
+    },
+    currentCategoryWidgets() {
+      const group = this.availableWidgets.find(w => w.type === 'data_group')
+      if (!group) return []
+      const category = group.categories.find(c => c.id === this.activeCategory)
+      return category ? category.children : []
     }
   },
   async mounted() {
@@ -338,7 +416,10 @@ export default {
         i: newId,
         type: this.draggedItem.type,
         dataset_id: null,
-        config: { title: '新建组件', type: 'bar' }
+        config: { 
+          title: '新建' + this.draggedItem.label, 
+          type: this.draggedItem.sub || 'bar' 
+        }
       }
       this.widgetLayout.push(newWidget)
       this.activeWidgetId = newId
@@ -361,8 +442,26 @@ export default {
       return componentMap[type] || 'div'
     },
     getWidgetLabel(type) {
+      if (type === 'chart') return '图表组件'
+      if (type === 'table') return '数据表格'
+      
       const found = this.availableWidgets.find(w => w.type === type)
-      return found ? found.label : type
+      if (found) return found.label
+      
+      // Check in children of groups
+      for (const group of this.availableWidgets) {
+        if (group.children) {
+          const sub = group.children.find(s => s.type === type)
+          if (sub) return sub.label
+        }
+        if (group.categories) {
+          for (const cat of group.categories) {
+            const sub = cat.children.find(s => s.type === type)
+            if (sub) return sub.label
+          }
+        }
+      }
+      return type
     },
     deleteWidget(id) {
       const index = this.widgetLayout.findIndex(w => w.i === id)
@@ -591,6 +690,13 @@ export default {
   box-shadow: 0 0 15px rgba(0, 191, 255, 0.3);
 }
 
+:deep(.el-popover.widget-picker-popper) {
+  padding: 0 !important;
+  background: #141a2b !important;
+  border: 1px solid rgba(0, 191, 255, 0.4) !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+
 .widget-toolbar {
   height: 28px;
   background: rgba(0, 191, 255, 0.1);
@@ -673,5 +779,79 @@ export default {
 
 .widget-dropdown {
   margin: 0;
+}
+
+/* 基础组件弹出面板样式 */
+.widget-picker-panel {
+  display: flex;
+  height: 250px;
+  background: #1a233a;
+  color: #fff;
+}
+
+.picker-sidebar {
+  width: 100px;
+  border-right: 1px solid rgba(0, 191, 255, 0.2);
+  display: flex;
+  flex-direction: column;
+}
+
+.category-item {
+  padding: 12px 15px;
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.3s;
+}
+
+.category-item:hover {
+  background: rgba(0, 191, 255, 0.1);
+}
+
+.category-item.active {
+  background: rgba(0, 191, 255, 0.2);
+  color: #00d2ff;
+  border-left: 3px solid #00d2ff;
+}
+
+.picker-content {
+  flex: 1;
+  padding: 15px;
+  overflow-y: auto;
+}
+
+.widget-grid-small {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.picker-widget-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  cursor: grab;
+  font-size: 12px;
+  transition: all 0.2s;
+}
+
+.picker-widget-item:hover {
+  border-color: #00d2ff;
+  background: rgba(0, 191, 255, 0.1);
+}
+
+.picker-widget-item i {
+  font-size: 20px;
+  color: #00d2ff;
+}
+
+:deep(.widget-picker-popper) {
+  padding: 0 !important;
+  background: #1a233a !important;
+  border: 1px solid rgba(0, 191, 255, 0.4) !important;
 }
 </style>

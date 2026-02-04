@@ -20,7 +20,7 @@ __pycache__/
 *$py.class
 *.so
 .Python
-build/
+install/
 develop-eggs/
 dist/
 downloads/
@@ -54,7 +54,6 @@ yarn-error.log*
 
 # Build outputs
 /dist/
-/build/
 
 # Environment variables
 .env

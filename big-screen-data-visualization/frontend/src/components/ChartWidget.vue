@@ -18,7 +18,7 @@
 <script>
 import { use } from 'echarts/core'
 import { CanvasRenderer } from 'echarts/renderers'
-import { BarChart, LineChart, PieChart, ScatterChart } from 'echarts/charts'
+import { BarChart, LineChart, PieChart, ScatterChart, RadarChart, FunnelChart } from 'echarts/charts'
 import {
   TitleComponent,
   TooltipComponent,
@@ -34,6 +34,8 @@ use([
   LineChart,
   PieChart,
   ScatterChart,
+  RadarChart,
+  FunnelChart,
   TitleComponent,
   TooltipComponent,
   LegendComponent,
@@ -91,6 +93,10 @@ export default {
           return this.getPieOption(baseOption)
         case 'scatter':
           return this.getScatterOption(baseOption)
+        case 'radar':
+          return this.getRadarOption(baseOption)
+        case 'funnel':
+          return this.getFunnelOption(baseOption)
         default:
           return baseOption
       }
@@ -201,6 +207,75 @@ export default {
             color: this.config.color || '#fa8c16'
           }
         }]
+      }
+    },
+    getRadarOption(baseOption) {
+      return {
+        ...baseOption,
+        radar: {
+          indicator: this.data.map(item => ({ name: item.label || item.name, max: 100 })),
+          center: ['50%', '60%'],
+          radius: '60%'
+        },
+        series: [{
+          name: this.config.title,
+          type: 'radar',
+          data: [
+            {
+              value: this.data.map(item => item.value),
+              name: '指标数据'
+            }
+          ]
+        }]
+      }
+    },
+    getFunnelOption(baseOption) {
+      return {
+        ...baseOption,
+        tooltip: {
+          trigger: 'item',
+          formatter: '{a} <br/>{b}: {c}'
+        },
+        series: [
+          {
+            name: this.config.title,
+            type: 'funnel',
+            left: '10%',
+            top: 60,
+            bottom: 60,
+            width: '80%',
+            min: 0,
+            max: 100,
+            minSize: '0%',
+            maxSize: '100%',
+            sort: 'descending',
+            gap: 2,
+            label: {
+              show: true,
+              position: 'inside'
+            },
+            labelLine: {
+              length: 10,
+              lineStyle: {
+                width: 1,
+                type: 'solid'
+              }
+            },
+            itemStyle: {
+              borderColor: '#fff',
+              borderWidth: 1
+            },
+            emphasis: {
+              label: {
+                fontSize: 20
+              }
+            },
+            data: this.data.map(item => ({
+              name: item.label || item.name,
+              value: item.value
+            }))
+          }
+        ]
       }
     }
   }

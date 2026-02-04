@@ -173,6 +173,8 @@
 import { mapState, mapActions } from 'vuex'
 import { GridLayout, GridItem } from 'grid-layout-plus'
 import EChartsMapWidget from '../components/EChartsMapWidget.vue'
+import ThreeCityWidget from '../components/ThreeCityWidget.vue'
+import ThreeFactoryWidget from '../components/ThreeFactoryWidget.vue'
 import ChartWidget from '../components/ChartWidget.vue'
 import TableWidget from '../components/TableWidget.vue'
 import MetricWidget from '../components/MetricWidget.vue'
@@ -183,6 +185,8 @@ export default {
     GridLayoutPlus: GridLayout,
     GridItemPlus: GridItem,
     EChartsMapWidget,
+    ThreeCityWidget,
+    ThreeFactoryWidget,
     ChartWidget,
     TableWidget,
     MetricWidget
@@ -199,6 +203,8 @@ export default {
       draggedItem: null,
       availableWidgets: [
         { type: 'echarts_map', label: '态势地图', icon: 'el-icon-map-location' },
+        { type: 'three_city', label: '3D城市', icon: 'el-icon-office-building' },
+        { type: 'three_factory', label: '3D工厂', icon: 'el-icon-set-up' },
         { type: 'chart', label: '数据图表', icon: 'el-icon-pie-chart' },
         { type: 'metric', label: '指标卡片', icon: 'el-icon-odometer' },
         { type: 'table', label: '数据表格', icon: 'el-icon-tickets' }
@@ -306,6 +312,8 @@ export default {
     getWidgetComponent(type) {
       const componentMap = {
         echarts_map: 'EChartsMapWidget',
+        three_city: 'ThreeCityWidget',
+        three_factory: 'ThreeFactoryWidget',
         chart: 'ChartWidget',
         table: 'TableWidget',
         metric: 'MetricWidget'

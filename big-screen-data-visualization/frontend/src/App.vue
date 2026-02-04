@@ -13,7 +13,22 @@
           <el-menu-item index="/datasources">数据源</el-menu-item>
           <el-menu-item index="/datasets">数据集</el-menu-item>
           <el-menu-item index="/dashboard-view">大屏展示</el-menu-item>
+          <el-menu-item v-if="isAdmin" index="/users">用户管理</el-menu-item>
         </el-menu>
+        <div class="user-info" v-if="currentUser">
+          <el-dropdown @command="handleCommand">
+            <span class="el-dropdown-link">
+              {{ currentUser.full_name || currentUser.username }}
+              <el-icon class="el-icon--right"><arrow-down /></el-icon>
+            </span>
+            <template #dropdown>
+              <el-dropdown-menu>
+                <el-dropdown-item command="changePassword">修改密码</el-dropdown-item>
+                <el-dropdown-item command="logout">退出登录</el-dropdown-item>
+              </el-dropdown-menu>
+            </template>
+          </el-dropdown>
+        </div>
       </el-header>
       <el-main class="main-content" :class="{ 'no-header': hideNav }">
         <router-view />
@@ -22,13 +37,26 @@
   </div>
 </template>
 
-<script>
-export default {
-  name: 'App',
-  computed: {
-    hideNav() {
-      return this.$route.meta && this.$route.meta.hideNav
-    }
+<script setup>
+import { computed } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { useStore } from 'vuex'
+import { ArrowDown } from '@element-plus/icons-vue'
+
+const route = useRoute()
+const router = useRouter()
+const store = useStore()
+
+const hideNav = computed(() => route.meta && route.meta.hideNav)
+const currentUser = computed(() => store.getters['auth/currentUser'])
+const isAdmin = computed(() => store.getters['auth/isAdmin'])
+
+const handleCommand = (command) => {
+  if (command === 'logout') {
+    store.dispatch('auth/logout')
+    router.push('/login')
+  } else if (command === 'changePassword') {
+    router.push('/change-password')
   }
 }
 </script>
@@ -71,6 +99,19 @@ body {
 
 .nav-menu {
   border-bottom: none;
+  flex: 1;
+  margin-left: 20px;
+}
+
+.user-info {
+  margin-left: 20px;
+}
+
+.el-dropdown-link {
+  cursor: pointer;
+  color: #409eff;
+  display: flex;
+  align-items: center;
 }
 
 .main-content {

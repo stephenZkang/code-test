@@ -13,6 +13,7 @@ from routers import (
     dashboards as dashboards_router,
     system as system_router,
     alarms as alarms_router,
+    users as users_router,
 )
 
 models.Base.metadata.create_all(bind=engine)
@@ -34,6 +35,7 @@ app.include_router(
 )
 app.include_router(system_router.router, prefix="/api/system", tags=["system"])
 app.include_router(alarms_router.router, prefix="/api/alarms", tags=["alarms"])
+app.include_router(users_router.router, prefix="/api/users", tags=["users"])
 
 
 @app.get("/")

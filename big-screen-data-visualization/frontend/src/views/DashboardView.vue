@@ -71,6 +71,8 @@ import { GridLayout, GridItem } from 'grid-layout-plus'
 import MapWidget from '../components/MapWidget.vue'
 import ChartWidget from '../components/ChartWidget.vue'
 import EChartsMapWidget from '../components/EChartsMapWidget.vue'
+import ThreeCityWidget from '../components/ThreeCityWidget.vue'
+import ThreeFactoryWidget from '../components/ThreeFactoryWidget.vue'
 import TableWidget from '../components/TableWidget.vue'
 import MetricWidget from '../components/MetricWidget.vue'
 import SystemStatusWidget from '../components/SystemStatusWidget.vue'
@@ -83,6 +85,8 @@ export default {
     GridItemPlus: GridItem,
     MapWidget,
     EChartsMapWidget,
+    ThreeCityWidget,
+    ThreeFactoryWidget,
     ChartWidget,
     TableWidget,
     MetricWidget,
@@ -181,6 +185,8 @@ export default {
       const componentMap = {
         map: 'MapWidget',
         echarts_map: 'EChartsMapWidget',
+        three_city: 'ThreeCityWidget',
+        three_factory: 'ThreeFactoryWidget',
         chart: 'ChartWidget',
         table: 'TableWidget',
         metric: 'MetricWidget',

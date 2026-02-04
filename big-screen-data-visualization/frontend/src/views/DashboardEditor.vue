@@ -247,22 +247,22 @@
             <el-form-item label="背景图上传">
               <el-upload
                 class="bg-uploader"
+                drag
                 action="http://localhost:8000/api/assets/upload"
                 :show-file-list="false"
                 :on-success="handleBgUploadSuccess"
                 :before-upload="beforeBgUpload"
               >
-                <div v-if="dashboard.layout_config.backgroundImage" class="bg-preview-uploader">
+                <div v-if="dashboard.layout_config.backgroundImage" class="bg-preview-uploader-container">
                   <img :src="dashboard.layout_config.backgroundImage" class="preview-img" />
-                  <div class="preview-mask">
-                    <el-icon><Edit /></el-icon>
-                    <span>点击更换</span>
+                  <div class="el-upload__text">点击或拖拽更换图片</div>
+                </div>
+                <template v-else>
+                  <el-icon class="el-icon--upload"><Plus /></el-icon>
+                  <div class="el-upload__text">
+                    将文件拖到此处，或<em>点击上传</em>
                   </div>
-                </div>
-                <div v-else class="uploader-placeholder">
-                  <el-icon><Plus /></el-icon>
-                  <span>上传图片</span>
-                </div>
+                </template>
               </el-upload>
             </el-form-item>
             <el-form-item label="背景图 URL">
@@ -1021,63 +1021,36 @@ export default {
 }
 
 /* Uploader Styles */
-.bg-uploader {
-  width: 100%;
-}
-
-.bg-preview-uploader {
-  width: 100%;
-  height: 120px;
-  position: relative;
-  border-radius: 4px;
-  overflow: hidden;
-  border: 1px dashed rgba(0, 191, 255, 0.4);
-}
-
-.bg-preview-uploader .preview-img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.preview-mask {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  color: #fff;
-  opacity: 0;
-  transition: opacity 0.3s;
-  gap: 5px;
-}
-
-.bg-preview-uploader:hover .preview-mask {
-  opacity: 1;
-}
-
-.uploader-placeholder {
-  width: 100%;
-  height: 120px;
-  border: 1px dashed rgba(0, 191, 255, 0.4);
+.bg-uploader :deep(.el-upload-dragger) {
+  padding: 10px;
   background: rgba(0, 191, 255, 0.05);
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  color: #00d2ff;
-  border-radius: 4px;
-  gap: 10px;
-  transition: all 0.3s;
+  border-color: rgba(0, 191, 255, 0.3);
+  width: 100%;
 }
 
-.uploader-placeholder:hover {
-  background: rgba(0, 191, 255, 0.1);
-  border-color: #00d2ff;
+.bg-preview-uploader-container {
+  width: 100%;
+  height: 100px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.bg-preview-uploader-container .preview-img {
+  max-width: 100%;
+  max-height: 80px;
+  object-fit: contain;
+  margin-bottom: 5px;
+}
+
+.bg-uploader :deep(.el-upload__text) {
+  font-size: 12px;
+  color: #00d2ff;
+}
+
+.bg-uploader :deep(.el-icon--upload) {
+  font-size: 28px;
+  margin-bottom: 5px;
 }
 </style>

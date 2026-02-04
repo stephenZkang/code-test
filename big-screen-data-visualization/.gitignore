@@ -53,6 +53,7 @@ yarn-error.log*
 
 # Build outputs
 /dist/
+uploads/
 
 # Environment variables
 .env
